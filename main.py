@@ -3,13 +3,13 @@ import os
 from flask_login import LoginManager, login_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-import microexp.test as micro_ext_test
+# import microexp.test as micro_ext_test
 import json
 import jwt
 import datetime
 import uuid
-import microexp_processing
-import mr_processing
+# import microexp_processing
+# import mr_processing
 
 from mysql_manager import MysqlManager
 from dict_format import EmployeeBody, ResultBody, PatientBody, DiagnosisBody
@@ -100,11 +100,12 @@ def employee_register():
     form = request.get_json()
     username = form.get("username")
     name = form.get("name")
-    password = md5_encrypt(form.get("password"))
+    password = form.get("password")
+    password = md5_encrypt(password)
     phone = form.get("phone")
     role = "user"
     
-    body = EmployeeBody(username, name, phone, password, role).GetAsDict()
+    body = EmployeeBody(username, name, password, phone, role).GetAsDict()
     db_name = parser.parse_args().employee_db
     table_name = parser.parse_args().employee_info
     
@@ -124,7 +125,9 @@ def employee_query_by_id():
     
     response_data = make_response()
     response_data = ResultBody(result != None)
-    response_data.data = {"id" : id}.update(EmployeeBody(result[1:]))
+    data = {"id" : id}
+    data.update(EmployeeBody(*result[0][1:]).GetAsDict())
+    response_data.data = data
     return jsonify(response_data.to_dict())
 
 @app.route('/employee/edit_info', methods=['PUT'])
@@ -137,7 +140,7 @@ def employee_edit_info():
     phone = form.get("phone")
     role = form.get("role")
     
-    body = EmployeeBody(username, name, phone, password, role).GetAsDict()
+    body = EmployeeBody(username, name, password, phone, role).GetAsDict()
     db_name = parser.parse_args().employee_db
     table_name = parser.parse_args().employee_info
     
@@ -160,7 +163,7 @@ def employee_edit_password():
     db_name = parser.parse_args().employee_db
     table_name = parser.parse_args().employee_info
     
-    if old_password != mysql_manager.query_fields(db_name, table_name, ["password"], {"id" : f"= {id}"})[0]:
+    if old_password != mysql_manager.query_fields(db_name, table_name, ["password"], {"id" : f"= {id}"})[0][0]:
         response_data = ResultBody(0)
         return jsonify(response_data.to_dict())
         
@@ -298,14 +301,14 @@ def upload_file():
         save_filename = f"{uuid.uuid4()}_processed.{original_filename.rsplit('.', 1)[1]}"
         save_filepath = os.path.join(app.config['UPLOAD_FOLDER'], save_filename)
         #此处补充微表情算法处理图片
-        microexp_processing.add_text_watermark(original_filepath,save_filepath)
+        # microexp_processing.add_text_watermark(original_filepath,save_filepath)
     elif algo in ("mr1", "mr2"):
         # 根据文件名前缀生成处理结果
         prefix = original_filename.split('.')[0]
         save_filename = f"{prefix}_pred.png"
         save_filepath = os.path.join(app.config['UPLOAD_FOLDER'], save_filename)
         # 此处需补充脑肿瘤识别算法
-        mr_processing.add_text_watermark(original_filepath,save_filepath)
+        # mr_processing.add_text_watermark(original_filepath,save_filepath)
     else:
         return jsonify(ResultBody(400, msg="未知算法").to_dict()), 400
 

@@ -1,6 +1,6 @@
 from utils import md5_encrypt
 class EmployeeBody:
-    def __init__(self, username=None, name=None, phone=None, password=None, role=None):
+    def __init__(self, username=None, name=None, password=None, phone=None, role=None):
         self.username = username
         self.name = name
         self.phone = phone
