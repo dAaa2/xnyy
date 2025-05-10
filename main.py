@@ -8,6 +8,8 @@ import json
 import jwt
 import datetime
 import uuid
+
+from utils import logger
 # import microexp_processing
 # import mr_processing
 
@@ -48,41 +50,132 @@ def allowed_file(filename):
 
 
 # 判断是否可以登录
-@app.route('/login', methods=['POST'])
+@app.route('/employee/login_test', methods=['POST'])
+def login1():
+    #获取用户名和密码
+    response_data = make_response()
+    form = request.get_json()
+    user_name = form.get("username")
+    user_password = form.get("password")
+    user_password = md5_encrypt(user_password)
+    
+    db_name = parser.parse_args().employee_db
+    table_name = parser.parse_args().employee_info
+    
+    result = mysql_manager.query_fields(db_name, table_name, EmployeeBody.GetQueryFieldsList(), {"username" : f"= {user_name}"})
+    
+    # 验证输入
+    # if not user_name or not user_password:
+    #     return jsonify(ResultBody(400, msg="用户名和密码必填").to_dict()), 400
+
+    # password_check = mysql_manager.query_fields(db_name, table_name, ["password"], {"username" : f"= {user_name}"})
+    
+    
+    # if password_check == []:
+    #     logger.info("查询失败")
+    #     return
+    
+    # logger.info(password_check)
+    
+    # if password_check[0][0] != user_password:
+    #     return jsonify(ResultBody(401, msg="用户不存在").to_dict()), 401
+
+
+    # 生成JWT Token
+    # token = jwt.encode({
+    #     'user_id': user_id,
+    #     'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=8) #8小时后过期
+    # }, app.config['SECRET_KEY'], algorithm='HS256')
+
+    # token = {
+    #     'user_id': user_id,
+    #     'exp' : 8
+    # }
+    
+    #构建响应数据
+    # response_data = ResultBody(200)
+    # response_data.data = {
+    #     'id': form.get("id"),
+    #     'name': form.get("name"),
+    #     'username': form.get("user_name"),
+    #     'phone': form.get('phone'),
+    #     'role': form.get('role'),
+    #     'token': "user_id"
+    # }
+    logger.info(result)
+    response_data = ResultBody(1)
+    response_data.data = {
+        'id': "id",
+        'name': "name",
+        'username': "user_name",
+        'phone': 'phone',
+        'role': 'user',
+        'token': "user_id"
+    }
+    return jsonify(response_data.to_dict())
+
+# 判断是否可以登录
+@app.route('/employee/login', methods=['POST'])
 def login():
     #获取用户名和密码
     response_data = make_response()
     form = request.get_json()
-    user_name = form.get("userName")
+    user_name = form.get("username")
     user_password = form.get("password")
+    user_password = md5_encrypt(user_password)
+    user_id = form.get("id")
+    
+    db_name = parser.parse_args().employee_db
+    table_name = parser.parse_args().employee_info
+    
+    
+    
     # 验证输入
-    if not user_name or not user_password:
-        return jsonify(ResultBody(400, msg="用户名和密码必填").to_dict()), 400
+    # if not user_name or not user_password:
+    #     return jsonify(ResultBody(400, msg="用户名和密码必填").to_dict()), 400
 
-    # 通过用户名查询用户
-    user_data = users_db.get(user_name)
-    if not user_data:
-        return jsonify(ResultBody(401, msg="用户不存在").to_dict()), 401
+    # password_check = mysql_manager.query_fields(db_name, table_name, ["password"], {"username" : f"= {user_name}"})
+    
+    
+    # if password_check == []:
+    #     logger.info("查询失败")
+    #     return
+    
+    # logger.info(password_check)
+    
+    # if password_check[0][0] != user_password:
+    #     return jsonify(ResultBody(401, msg="用户不存在").to_dict()), 401
 
-    # 验证密码
-    if not user_data["password"]==user_password:
-        return jsonify(ResultBody(401, msg="密码错误").to_dict()), 401
 
     # 生成JWT Token
-    token = jwt.encode({
-        'user_id': user_data['id'],
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=8) #8小时后过期
-    }, app.config['SECRET_KEY'], algorithm='HS256')
+    # token = jwt.encode({
+    #     'user_id': user_id,
+    #     'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=8) #8小时后过期
+    # }, app.config['SECRET_KEY'], algorithm='HS256')
 
+    # token = {
+    #     'user_id': user_id,
+    #     'exp' : 8
+    # }
+    
     #构建响应数据
-    response_data = ResultBody(200)
+    # response_data = ResultBody(200)
+    # response_data.data = {
+    #     'id': form.get("id"),
+    #     'name': form.get("name"),
+    #     'username': form.get("user_name"),
+    #     'phone': form.get('phone'),
+    #     'role': form.get('role'),
+    #     'token': "user_id"
+    # }
+    response_data = ResultBody(1)
     response_data.data = {
-        'id': user_data['id'],
-        'name': user_data['name'],
-        'userName': user_data['userName'],
-        'phone': user_data['phone'],
-        'role': user_data['role'],
-        'token': token
+        'id': "id",
+        'name': "name",
+        'username': "user_name",
+        'phone': 'phone',
+        'role': 'user',
+        'token': "user_id"
     }
     return jsonify(response_data.to_dict())
 
@@ -112,7 +205,9 @@ def employee_register():
     result = mysql_manager.insert_data(db_name, table_name, body)
     
     response_data = make_response()
-    response_data = ResultBody(result)
+    msg = "注册失败" if not result else None
+    response_data = ResultBody(result, msg = msg)
+
     return jsonify(response_data.to_dict())
 
 @app.route('/employee/query_id', methods=['GET'])
@@ -128,6 +223,7 @@ def employee_query_by_id():
     data = {"id" : id}
     data.update(EmployeeBody(*result[0][1:]).GetAsDict())
     response_data.data = data
+    
     return jsonify(response_data.to_dict())
 
 @app.route('/employee/edit_info', methods=['PUT'])
@@ -323,4 +419,3 @@ def download_file(filename):
 
 if __name__ == '__main__':
     app.run(host = "0.0.0.0",port="5000")
-
