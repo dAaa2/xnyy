@@ -21,7 +21,8 @@ class EmployeeBody:
         return ["id", "username", "name", "password", "phone", "role"]
 
 class PatientBody:
-    def __init__(self, name, sex, age, description):
+    def __init__(self, patient_id, name, sex, age, description):
+        self.patient_id = patient_id
         self.name = name
         self.sex = sex
         self.age = age
@@ -29,6 +30,7 @@ class PatientBody:
     
     def GetAsDict(self) -> dict:
         ret = {
+            
             "name" : self.name,
             "sex" : self.sex,
             "age" : self.age,
@@ -63,7 +65,7 @@ class ResultBody:
     def __init__(self, code, data=None, msg=None):
         self.code = code
         self.data = data or {}
-        self.msg = msg or (f"Code {code} 错误" if code != 200 else None)
+        self.msg = msg or (f"Code {code} 错误" if code not in [200, True, 1] else None)
 
     def to_dict(self):
         return {
