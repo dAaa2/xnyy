@@ -121,43 +121,31 @@ def login():
     response_data = make_response()
     form = request.get_json()
     user_name = form.get("username")
+    user_name = form.get("username")
     user_password = form.get("password")
     user_password = md5_encrypt(user_password)
-    user_id = form.get("id")
-    
-    db_name = parser.parse_args().employee_db
-    table_name = parser.parse_args().employee_info
-    
-    
-    
     # 验证输入
     # if not user_name or not user_password:
     #     return jsonify(ResultBody(400, msg="用户名和密码必填").to_dict()), 400
 
-    # password_check = mysql_manager.query_fields(db_name, table_name, ["password"], {"username" : f"= {user_name}"})
-    
-    
-    # if password_check == []:
-    #     logger.info("查询失败")
-    #     return
-    
-    # logger.info(password_check)
-    
-    # if password_check[0][0] != user_password:
-    #     return jsonify(ResultBody(401, msg="用户不存在").to_dict()), 401
+    # 通过用户名查询用户
+    user_data = mysql_manager.query_fields(parser.parse_known_args()[0].employee_db,
+                                              parser.parse_known_args()[0].employee_info,
+                                              ["id", "password", "name", "username", "phone", "role"],
+                                              {"username" : f"= '{user_name}'"})
+    if not user_data[0][3]:
+        return jsonify(ResultBody(401, msg="用户不存在").to_dict()), 401
 
+    # 验证密码
+    if not user_data[0][1]==user_password:
+        return jsonify(ResultBody(401, msg="密码错误").to_dict()), 401
 
     # 生成JWT Token
-    # token = jwt.encode({
-    #     'user_id': user_id,
-    #     'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=8) #8小时后过期
-    # }, app.config['SECRET_KEY'], algorithm='HS256')
+    token = jwt.encode({
+        'user_id': user_data[0][0],
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=8) #8小时后过期
+    }, app.config['SECRET_KEY'], algorithm='HS256')
 
-    # token = {
-    #     'user_id': user_id,
-    #     'exp' : 8
-    # }
-    
     #构建响应数据
     # response_data = ResultBody(200)
     # response_data.data = {
@@ -170,12 +158,12 @@ def login():
     # }
     response_data = ResultBody(1)
     response_data.data = {
-        'id': "id",
-        'name': "name",
-        'username': "user_name",
-        'phone': 'phone',
-        'role': 'user',
-        'token': "user_id"
+        'id': user_data[0][0],
+        'name': user_data[0][2],
+        'userName': user_data[0][3],
+        'phone': user_data[0][4],
+        'role': user_data[0][5],
+        'token': token
     }
     return jsonify(response_data.to_dict())
 
@@ -195,15 +183,20 @@ def employee_register():
     name = form.get("name")
     password = form.get("password")
     password = md5_encrypt(password)
+    password = form.get("password")
+    password = md5_encrypt(password)
     phone = form.get("phone")
     role = "user"
-    
+
     body = EmployeeBody(username, name, password, phone, role).GetAsDict()
-    db_name = parser.parse_args().employee_db
-    table_name = parser.parse_args().employee_info
-    
+    # db_name = parser.parse_args().employee_db
+    # table_name = parser.parse_args().employee_info
+    # 参数和flask run冲突，所以修改了
+    db_name = parser.parse_known_args()[0].employee_db
+    table_name = parser.parse_known_args()[0].employee_info
+
     result = mysql_manager.insert_data(db_name, table_name, body)
-    
+
     response_data = make_response()
     msg = "注册失败" if not result else None
     response_data = ResultBody(result, msg = msg)
