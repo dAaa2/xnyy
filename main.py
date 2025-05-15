@@ -8,6 +8,8 @@ import json
 import jwt
 import datetime
 import uuid
+import subprocess
+import shutil
 
 from utils import logger
 # import microexp_processing
@@ -48,6 +50,11 @@ users_db = {
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
+def extract_image_path(line):
+    start_idx = line.find('(') + 1
+    end_idx = line.rfind(')')
+    path = line[start_idx:end_idx]
+    return path
 
 # 判断是否可以登录
 @app.route('/employee/login_test', methods=['POST'])
@@ -371,14 +378,11 @@ def patient_add():
 @app.route('/algorithm', methods=['GET', 'POST'])
 def upload_file():
     #判断传入数据是否合法：
-    if 'img' not in request.files or 'algo' not in request.form:
+    if 'video' not in request.files or 'algo' not in request.form:
         return jsonify(ResultBody(400, msg="缺少文件或算法参数").to_dict()), 400
 
-    file = request.files['img']
+    file = request.files['video']
     algo = request.form['algo']
-
-    if not file or not allowed_file(file.filename):
-        return jsonify(ResultBody(400, msg="无效文件类型").to_dict()), 400
 
     # 保存原始文件
     original_filename = secure_filename(file.filename)
@@ -387,22 +391,71 @@ def upload_file():
 
     # 处理文件
     if algo == "micro_exp":
+        # 生成保存结果的文件名
         save_filename = f"{uuid.uuid4()}_processed.{original_filename.rsplit('.', 1)[1]}"
         save_filepath = os.path.join(app.config['UPLOAD_FOLDER'], save_filename)
-        #此处补充微表情算法处理图片
-        # microexp_processing.add_text_watermark(original_filepath,save_filepath)
+
+        # 构造命令行调用
+        exe_path = "D:/test/MEAN_Spot-then-recognize/dist/predict/predict.exe"
+
+        # 假设 final_predict.exe 支持两个参数：img1 和 img2
+        cmd = [
+            exe_path,
+            "--video", original_filepath,
+            "--weights", "D:/test/MEAN_Spot-then-recognize/dist/predict/MEAN_Weights/CASME2/spot/s1.hdf5"
+        ]
+
+        # 执行外部程序
+        result = subprocess.run(
+            cmd,
+            capture_output=True,  # 捕获 stdout 和 stderr
+            encoding='utf-8',  # 设置编码格式
+            errors='replace'  # 防止乱码
+        )
+        # 解析输出
+        # 获取标准输出的所有行
+        stdout_lines = result.stdout.strip().split('\n')
+
+        # 只取最后两行
+        last_two_lines = stdout_lines[-2:] if len(stdout_lines) >= 2 else stdout_lines
+
+        if len(last_two_lines) >= 2:
+            onset_line, apex_line = last_two_lines
+
+            onset_path = extract_image_path(onset_line)  # tmp_frames\xx\img23.jpg
+            apex_path = extract_image_path(apex_line)  # tmp_frames\xx\img31.jpg
+
+        print("Onset Path: ", onset_path)
+        print("Apex Path: ", apex_path)
+
+        # 检查执行是否成功
+        # if result.returncode != 0:
+        #     return jsonify(ResultBody(500, msg="算法执行失败", data={"error": result.stderr}).to_dict()), 500
+
     elif algo in ("mr1", "mr2"):
-        # 根据文件名前缀生成处理结果
-        prefix = original_filename.split('.')[0]
-        save_filename = f"{prefix}_pred.png"
-        save_filepath = os.path.join(app.config['UPLOAD_FOLDER'], save_filename)
-        # 此处需补充脑肿瘤识别算法
+        # # 根据文件名前缀生成处理结果
+        # prefix = original_filename.split('.')[0]
+        # save_filename = f"{prefix}_pred.png"
+        # save_filepath = os.path.join(app.config['UPLOAD_FOLDER'], save_filename)
+        # # 此处需补充脑肿瘤识别算法
         # mr_processing.add_text_watermark(original_filepath,save_filepath)
+        pass
     else:
         return jsonify(ResultBody(400, msg="未知算法").to_dict()), 400
 
-    download_url = url_for('download_file', filename=save_filename, _external=True)
-    return jsonify(ResultBody(200, data={'download_url': download_url}).to_dict())
+    # 提取原始路径中的文件名
+    onset_filename = os.path.basename(onset_path)  # img23.jpg
+
+    print("onset filename: ", onset_filename)
+
+    # 复制到 uploads 目录
+    shutil.copy(onset_path, os.path.join(app.config['UPLOAD_FOLDER'], onset_filename))
+
+    # 构造正确的 download_url
+    onset_url = url_for('download_file', filename=onset_filename, _external=True)
+
+    download_url = url_for('download_file', filename=onset_path, _external=True)
+    return jsonify(ResultBody(200, data={'download_url': onset_url}).to_dict())
 
 #拿到前端返回的图片
 @app.route('/uploads/<path:filename>')
