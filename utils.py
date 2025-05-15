@@ -52,4 +52,3 @@ def md5_encrypt(text: str) -> str:
     md5_obj = hashlib.md5()
     md5_obj.update(bytes_text)
     return md5_obj.hexdigest()
-
