@@ -265,7 +265,7 @@ def patient_image_upload():
     original_filepath = os.path.join(original_filepath, original_filename)
     print(original_filepath)
     image.save(original_filepath)
-
+    
     db_name = parser.parse_args().patient_db
     table_name = parser.parse_args().patient_diagnosis
     result = mysql_manager.insert_data(db_name, table_name, DiagnosisBody(original_filepath, id, diagnosis_type).GetAsDict())
@@ -273,7 +273,8 @@ def patient_image_upload():
     response_data = make_response()
     response_data = ResultBody(result)
     return jsonify(response_data.to_dict())
-    
+
+#获取图片 
 @app.route('/patient/<id>', methods=['GET'])
 def patient_query_by_id(id):
     form = request.get_json()
@@ -293,39 +294,37 @@ def patient_query_by_id(id):
     response_data.data = data
     return jsonify(response_data.to_dict())
 
-'''
-fixme:获取图片参数待沟通
-'''
-@app.route('/patient/diagnosis/<id>', methods=['GET'])
-def patient_diagnosis_query_by_id():
-    form = request.get_json()
-    id = form.get("id")
-    diagnosis_type = form.get("diagnosis_type")
-    file = request.files['img']
-    
-    if not file or not allowed_file(file.filename):
-        return jsonify(ResultBody(400, msg="无效文件类型").to_dict()), 400
-    
-    original_filename = secure_filename(file.filename)
-    original_filepath = os.path.join(app.config['UPLOAD_FOLDER'], original_filename)
-    file.save(original_filepath)
-    
-    db_name = parser.parse_args().patient_db
-    table_name = parser.parse_args().patient_diagnosis
-    
-    name = mysql_manager.query_fields(db_name, table_name, ['name'], {"id" : f"= {id}"})
-    body = DiagnosisBody(original_filepath, original_filename, id, name[0], diagnosis_type)
-    result = mysql_manager.insert_data(db_name, table_name, body)
-    
-    response_data = make_response()
-    response_data = ResultBody(result)
-    return jsonify(response_data.to_dict())
 
-#图片删除依据图片的id
-@app.route('/patient/diagnosis/delete_image', methods=['DELETE'])
+# @app.route('/patient/diagnosis/<id>', methods=['GET'])
+# def patient_diagnosis_query_by_id():
+#     form = request.get_json()
+#     id = form.get("id")
+#     diagnosis_type = form.get("diagnosis_type")
+#     file = request.files['img']
+    
+#     if not file or not allowed_file(file.filename):
+#         return jsonify(ResultBody(400, msg="无效文件类型").to_dict()), 400
+    
+#     original_filename = secure_filename(file.filename)
+#     original_filepath = os.path.join(app.config['UPLOAD_FOLDER'], original_filename)
+#     file.save(original_filepath)
+    
+#     db_name = parser.parse_args().patient_db
+#     table_name = parser.parse_args().patient_diagnosis
+    
+#     name = mysql_manager.query_fields(db_name, table_name, ['name'], {"id" : f"= {id}"})
+#     body = DiagnosisBody(original_filepath, original_filename, id, name[0], diagnosis_type)
+#     result = mysql_manager.insert_data(db_name, table_name, body)
+    
+#     response_data = make_response()
+#     response_data = ResultBody(result)
+#     return jsonify(response_data.to_dict())
+
+#图片删除依据图片的地址
+@app.route('/patient/diagnosis/deleteImage', methods=['DELETE'])
 def patient_diagnosis_delete_image():
     form = request.get_json()
-    image_index = form.get("image_index")
+    image_path = form.get("imageUrl")
     id = form.get("id")
     
     db_name = parser.parse_args().patient_db
@@ -334,32 +333,30 @@ def patient_diagnosis_delete_image():
     response_data = make_response()
     response_data = ResultBody(0)
     
-    image_path = mysql_manager.query_fields(db_name, table_name, ["image_url"], {"id" : f"= {id}", "image_index" : f"= {image_index}"})
-    if image_path == []:
-        return jsonify(response_data.to_dict())
-    
-    result = mysql_manager.delete_data(db_name, table_name, "image_path", image_path[0])
+    result = mysql_manager.delete_data(db_name, table_name, "image_path", image_path)
     response_data = ResultBody(result)
     
     return jsonify(response_data.to_dict())
 
-# @app.route('/patient/edit_info', methods=['PUT'])
-# def patient_edit_info():
-#     form = request.get_json()
-#     id = form.get("id")
-#     name = form.get("name")
-#     sex = form.get("sex")
-#     age = form.get("age")
-#     description = form.get("description")
+@app.route('/patient/edit_info', methods=['PUT'])
+def patient_edit_info():
+    form = request.get_json()
+    id = form.get("id")
+    patient_id = form.get("patientId")
+    name = form.get("name")
+    sex = form.get("sex")
+    age = form.get("age")
+    description = form.get("description")
     
-#     body = PatientBody(name, sex, age, description).GetAsDict()
-#     db_name = parser.parse_args().employee_db
-#     table_name = parser.parse_args().employee_info
+    body = PatientBody(patient_id, name, sex, age, description).GetAsDict()
+    db_name = parser.parse_args().patient_db
+    table_name = parser.parse_args().patient_info
     
-#     result = mysql_manager.update_data(db_name, table_name, "id", id, body)
+    result = mysql_manager.update_data(db_name, table_name, "id", id, body)
     
-#     response_data = make_response()
-#     response_data = ResultBody(result)
+    response_data = make_response()
+    response_data = ResultBody(result)
+    return jsonify(response_data.to_dict())
 
 @app.route('/patient/add', methods=['POST'])
 def patient_add():

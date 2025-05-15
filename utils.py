@@ -42,7 +42,7 @@ parser.add_argument('--port', type=int,  help='flask port', default=5000)
 db_config_debug = {
     'host': 'localhost',
     'user': 'root',  # mysql用户，未更改默认为root
-    'password': 'demaxiya66',  # mysql连接密码，自己设置的
+    'password': '629629',  # mysql连接密码，自己设置的
     'pool_name': 'connection_pool', #连接池名字
     'pool_size': 5 #连接池大小
 }

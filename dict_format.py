@@ -55,7 +55,7 @@ class DiagnosisBody:
         return ret
     
     def GetQueryFieldsList() -> list:
-        return ["image_path", "iamge_index", "id", "diagnosis_type"]
+        return ["image_path", "id", "diagnosis_type"]
         
 class ResultBody:
     def __init__(self, code, data=None, msg=None):
