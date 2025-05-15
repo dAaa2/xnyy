@@ -31,88 +31,11 @@ app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg'}
 # app.secret_key = 'secret!'
 # app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# 模拟数据库用户数据
-users_db = {
-    'admin': {
-        'password': '123456',  # 123456加密后的值
-        'id': 1,
-        'name': '张三',
-        'userName': 'zhangsan',
-        'phone': '13800138000',
-        'role': 'admin',
-        'token': 'aavv'
-    }
-}
 
 #判断传入文件的格式是否符合要求
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
-
-# 判断是否可以登录
-@app.route('/employee/login_test', methods=['POST'])
-def login1():
-    #获取用户名和密码
-    response_data = make_response()
-    form = request.get_json()
-    user_name = form.get("username")
-    user_password = form.get("password")
-    user_password = md5_encrypt(user_password)
-    
-    db_name = parser.parse_args().employee_db
-    table_name = parser.parse_args().employee_info
-    
-    result = mysql_manager.query_fields(db_name, table_name, EmployeeBody.GetQueryFieldsList(), {"username" : f"= {user_name}"})
-    
-    # 验证输入
-    # if not user_name or not user_password:
-    #     return jsonify(ResultBody(400, msg="用户名和密码必填").to_dict()), 400
-
-    # password_check = mysql_manager.query_fields(db_name, table_name, ["password"], {"username" : f"= {user_name}"})
-    
-    
-    # if password_check == []:
-    #     logger.info("查询失败")
-    #     return
-    
-    # logger.info(password_check)
-    
-    # if password_check[0][0] != user_password:
-    #     return jsonify(ResultBody(401, msg="用户不存在").to_dict()), 401
-
-
-    # 生成JWT Token
-    # token = jwt.encode({
-    #     'user_id': user_id,
-    #     'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=8) #8小时后过期
-    # }, app.config['SECRET_KEY'], algorithm='HS256')
-
-    # token = {
-    #     'user_id': user_id,
-    #     'exp' : 8
-    # }
-    
-    #构建响应数据
-    # response_data = ResultBody(200)
-    # response_data.data = {
-    #     'id': form.get("id"),
-    #     'name': form.get("name"),
-    #     'username': form.get("user_name"),
-    #     'phone': form.get('phone'),
-    #     'role': form.get('role'),
-    #     'token': "user_id"
-    # }
-    logger.info(result)
-    response_data = ResultBody(1)
-    response_data.data = {
-        'id': "id",
-        'name': "name",
-        'username': "user_name",
-        'phone': 'phone',
-        'role': 'user',
-        'token': "user_id"
-    }
-    return jsonify(response_data.to_dict())
 
 # 判断是否可以登录
 @app.route('/employee/login', methods=['POST'])
@@ -133,7 +56,7 @@ def login():
                                               parser.parse_known_args()[0].employee_info,
                                               ["id", "password", "name", "username", "phone", "role"],
                                               {"username" : f"= '{user_name}'"})
-    if not user_data[0][3]:
+    if user_data == []:
         return jsonify(ResultBody(401, msg="用户不存在").to_dict()), 401
 
     # 验证密码
@@ -146,16 +69,6 @@ def login():
         'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=8) #8小时后过期
     }, app.config['SECRET_KEY'], algorithm='HS256')
 
-    #构建响应数据
-    # response_data = ResultBody(200)
-    # response_data.data = {
-    #     'id': form.get("id"),
-    #     'name': form.get("name"),
-    #     'username': form.get("user_name"),
-    #     'phone': form.get('phone'),
-    #     'role': form.get('role'),
-    #     'token': "user_id"
-    # }
     response_data = ResultBody(1)
     response_data.data = {
         'id': user_data[0][0],
@@ -175,14 +88,41 @@ def logout():
     data = json.dumps(data)
     return data
 
+#分页查询
+@app.route('/employee/page', methods=['GET'])
+def employee_getinfo_by_page():
+    form = request.get_json()
+    name = form.get("name")
+    page = form.get("page")
+    page_size = form.get("pageSize")
+    start_idx = (page - 1) * page_size
+    end_idx = page * page_size
+    
+    db_name = parser.parse_known_args()[0].employee_db
+    table_name = parser.parse_known_args()[0].employee_info
+    
+    result = mysql_manager.query_fields(db_name, table_name, EmployeeBody.GetQueryFieldsList(), \
+        {"name" : f"LIKE '%{name if name else str()}%'"})
+    response_data = make_response()
+    
+    if result == [] or len(result) < start_idx + 1:
+         return jsonify(ResultBody(9, msg = "未查询到用户").to_dict()) 
+    
+    if end_idx > len(result):
+        end_idx = len(result)
+    response_data = ResultBody(1)
+    print(result)
+    response_data.data = {"total" : end_idx - start_idx, "records" : \
+        [EmployeeBody(*result[i][1:]).GetAsDict() for i in range(start_idx, end_idx)]}
+    print(response_data.data)
+    return jsonify(response_data.to_dict())
+
 #用户注册
 @app.route('/employee/register', methods=['POST'])
 def employee_register():
     form = request.get_json()
     username = form.get("username")
     name = form.get("name")
-    password = form.get("password")
-    password = md5_encrypt(password)
     password = form.get("password")
     password = md5_encrypt(password)
     phone = form.get("phone")
@@ -203,8 +143,8 @@ def employee_register():
 
     return jsonify(response_data.to_dict())
 
-@app.route('/employee/query_id', methods=['GET'])
-def employee_query_by_id():
+@app.route('/employee/<id>', methods=['GET'])
+def employee_query_by_id(id):
     form = request.get_json()
     id = form.get("id")
     db_name = parser.parse_args().employee_db
@@ -212,7 +152,7 @@ def employee_query_by_id():
     result = mysql_manager.query_fields(db_name, table_name, EmployeeBody.GetQueryFieldsList(), {"id" : f"= {id}"})
     
     response_data = make_response()
-    response_data = ResultBody(result != None)
+    response_data = ResultBody(result != [])
     data = {"id" : id}
     data.update(EmployeeBody(*result[0][1:]).GetAsDict())
     response_data.data = data
@@ -273,23 +213,83 @@ def employee_delete_user():
     response_data = ResultBody(result)
     return jsonify(response_data.to_dict())
     
-@app.route('/patient/query_id', methods=['GET'])
-def patient_query_by_id():
+#患者分页查询
+@app.route('/patient/page', methods=['GET'])
+def patient_getinfo_by_page():
+    form = request.get_json()
+    patient_id = form.get("patientId")
+    name = form.get("name")
+    page = form.get("page")
+    page_size = form.get("pageSize")
+    start_idx = (page - 1) * page_size
+    end_idx = page * page_size
+    
+    db_name = parser.parse_args().patient_db
+    table_name = parser.parse_args().patient_info
+    
+    result = mysql_manager.query_fields(db_name, table_name, PatientBody.GetQueryFieldsList(), \
+        {"name" : f"LIKE '%{name if name else str()}%'", "patient_id" : f"LIKE '%{patient_id if patient_id else str()}%'"})
+    response_data = make_response()
+    
+    if result == [] or len(result) < start_idx + 1:
+         return jsonify(ResultBody(9, msg = "未查询到用户").to_dict()) 
+    
+    if end_idx > len(result):
+        end_idx = len(result)
+    response_data = ResultBody(1)
+    print(result)
+    response_data.data = {"total" : end_idx - start_idx, "records" : \
+        [PatientBody(*result[i][1:]).GetAsDict() for i in range(start_idx, end_idx)]}
+    print(response_data.data)
+    return jsonify(response_data.to_dict())
+
+@app.route('/patient/upload', methods=['POST'])
+def patient_image_upload():
+    id = request.form.get("id")
+    diagnosis_type = request.form.get("diagnosisType")
+    image = request.files["file"]
+    if not image or not allowed_file(image.filename):
+        return jsonify(ResultBody(400, msg="无效文件类型").to_dict()), 400
+    
+    print(type(image))
+    # 保存原始文件
+    original_filename = secure_filename(image.filename)
+    original_filepath = os.path.join(__file__.rsplit("\\", 1)[0], app.config['UPLOAD_FOLDER'])
+    original_filepath = os.path.join(original_filepath, original_filename)
+    print(original_filepath)
+    image.save(original_filepath)
+
+    db_name = parser.parse_args().patient_db
+    table_name = parser.parse_args().patient_diagnosis
+    result = mysql_manager.insert_data(db_name, table_name, DiagnosisBody(original_filepath, id, diagnosis_type).GetAsDict())
+    
+    response_data = make_response()
+    response_data = ResultBody(result)
+    return jsonify(response_data.to_dict())
+    
+@app.route('/patient/<id>', methods=['GET'])
+def patient_query_by_id(id):
     form = request.get_json()
     id = form.get("id")
     db_name = parser.parse_args().patient_db
     table_name = parser.parse_args().patient_info
-    result = mysql_manager.query_fields(db_name, table_name, PatientBody.GetQueryFieldsList(), {"id" : f"= {id}"})
+    result_patient_info = mysql_manager.query_fields(db_name, table_name, PatientBody.GetQueryFieldsList(), {"id" : f"= {id}"})
+    
+    table_name = parser.parse_args().patient_diagnosis
+    result_image_list = mysql_manager.query_fields(db_name, table_name, ["image_path"], {"id" : f"= '{id}'"})
     
     response_data = make_response()
-    response_data = ResultBody(result != None)
-    response_data.data = {"id" : id}.update(EmployeeBody(result[1:]))
+    response_data = ResultBody(result_patient_info != [])
+    data = {"id" : id}
+    data.update(EmployeeBody(result_patient_info[1:]).GetAsDict())
+    data.update({"imageList" : [image[0] for image in result_image_list]})
+    response_data.data = data
     return jsonify(response_data.to_dict())
 
 '''
 fixme:获取图片参数待沟通
 '''
-@app.route('/patient/diagnosis/query_id', methods=['GET'])
+@app.route('/patient/diagnosis/<id>', methods=['GET'])
 def patient_diagnosis_query_by_id():
     form = request.get_json()
     id = form.get("id")
@@ -324,11 +324,16 @@ def patient_diagnosis_delete_image():
     db_name = parser.parse_args().patient_db
     table_name = parser.parse_args().patient_diagnosis
     
-    image_path = mysql_manager.query_fields(db_name, table_name, ["image_url"], {"id" : f"= {id}", "image_index" : f"= {image_index}"})
-    result = mysql_manager.delete_data(db_name, table_name, "image_path", image_path[0])
-    
     response_data = make_response()
+    response_data = ResultBody(0)
+    
+    image_path = mysql_manager.query_fields(db_name, table_name, ["image_url"], {"id" : f"= {id}", "image_index" : f"= {image_index}"})
+    if image_path == []:
+        return jsonify(response_data.to_dict())
+    
+    result = mysql_manager.delete_data(db_name, table_name, "image_path", image_path[0])
     response_data = ResultBody(result)
+    
     return jsonify(response_data.to_dict())
 
 # @app.route('/patient/edit_info', methods=['PUT'])
@@ -352,12 +357,13 @@ def patient_diagnosis_delete_image():
 @app.route('/patient/add', methods=['POST'])
 def patient_add():
     form = request.get_json()
+    patient_id = form.get("patientId")
     name = form.get("name")
     sex = form.get("sex")
     age = form.get("age")
     description = form.get("description")
     
-    body = PatientBody(name, sex, age, description).GetAsDict()
+    body = PatientBody(patient_id, name, sex, age, description).GetAsDict()
     db_name = parser.parse_args().patient_db
     table_name = parser.parse_args().patient_info
     

@@ -30,7 +30,7 @@ class PatientBody:
     
     def GetAsDict(self) -> dict:
         ret = {
-            
+            "patient_id" : self.patient_id,
             "name" : self.name,
             "sex" : self.sex,
             "age" : self.age,
@@ -39,27 +39,23 @@ class PatientBody:
         return ret
 
     def GetQueryFieldsList() -> list:
-        return ["id", "name", "age", "description"]
+        return ["id", "patient_id" ,"name", "sex", "age", "description"]
    
 class DiagnosisBody:
-    def __init__(self, image_path, image_index, id, name, diagnosis_type):
+    def __init__(self, image_path, id, diagnosis_type):
         self.image_path = image_path
-        self.image_index = image_index
         self.id = id
-        self.name = name
         self.diagnosis_type = diagnosis_type    
     def GetAsDict(self) -> dict:
         ret = {
             "image_path" : self.image_path,
-            "image_index" : self.image_index,
             "id" : self.id,
-            "name" : self.name,
             "diagnosis_type" : self.diagnosis_type,
         }
         return ret
     
     def GetQueryFieldsList() -> list:
-        return ["image_path", "iamge_index", "id", "name", "diagnosis_type"]
+        return ["image_path", "iamge_index", "id", "diagnosis_type"]
         
 class ResultBody:
     def __init__(self, code, data=None, msg=None):

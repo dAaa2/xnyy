@@ -127,7 +127,7 @@ class MysqlManager:
             if conditions:
                 condition_clauses = []
                 for key, value in conditions.items():
-                    if value.startswith((">", "<", ">=", "<=", "!=", "=")):
+                    if value.startswith((">", "<", ">=", "<=", "!=", "=", "LIKE")):
                         condition_clauses.append(f"{key} {value}")
                     else:
                         condition_clauses.append(f"{key} = %s")
