@@ -1,18 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="ff@10.16.8.179:22 password (10)" remoteFilesAllowedToDisappearOnAutoupload="false">
+  <component name="PublishConfigData" autoUpload="Always" serverName="ff@10.16.8.179:22 password (3)" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
-      <paths name="ff@10.16.8.179:22 password">
+      <paths name="3090">
         <serverdata>
           <mappings>
             <mapping local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
-      <paths name="ff@10.16.8.179:22 password (10)">
+      <paths name="demo">
         <serverdata>
           <mappings>
-            <mapping deploy="/home/ff/CZW/xnyy" local="$PROJECT_DIR$" />
+            <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="ff@10.16.8.179:22 password">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/ff/yangtian" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
@@ -26,49 +33,14 @@
       <paths name="ff@10.16.8.179:22 password (3)">
         <serverdata>
           <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/home/ff/CZW/xnyy" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>
-      <paths name="ff@10.16.8.179:22 password (4)">
+      <paths name="xnyy">
         <serverdata>
           <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="ff@10.16.8.179:22 password (5)">
-        <serverdata>
-          <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="ff@10.16.8.179:22 password (6)">
-        <serverdata>
-          <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="ff@10.16.8.179:22 password (7)">
-        <serverdata>
-          <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="ff@10.16.8.179:22 password (8)">
-        <serverdata>
-          <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="ff@10.16.8.179:22 password (9)">
-        <serverdata>
-          <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/home/ff/CZW/xnyy" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>

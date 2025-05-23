@@ -1,6 +1,6 @@
 from flask import *
 import os
-from flask_login import LoginManager, login_user
+# from flask_login import LoginManager, login_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 # import microexp.test as micro_ext_test
@@ -396,13 +396,13 @@ def upload_file():
         save_filepath = os.path.join(app.config['UPLOAD_FOLDER'], save_filename)
 
         # 构造命令行调用
-        exe_path = "D:/test/MEAN_Spot-then-recognize/dist/predict/predict.exe"
+        exe_path = "/home/ff/CZW/xnyy/microexp/detection/predict"
 
         # 假设 final_predict.exe 支持两个参数：img1 和 img2
         cmd = [
             exe_path,
             "--video", original_filepath,
-            "--weights", "D:/test/MEAN_Spot-then-recognize/dist/predict/MEAN_Weights/CASME2/spot/s1.hdf5"
+            "--weights", "/home/ff/CZW/xnyy/microexp/detection/s1.hdf5"
         ]
 
         # 执行外部程序
