@@ -2,8 +2,9 @@ import os
 import logging
 import argparse
 import hashlib
+import sys
 
-base_path = os.path.dirname(os.path.abspath(__file__))
+base_path = os.path.abspath(__file__).rsplit('\\', 1)[0]
 print(base_path)
 log_file = os.path.join(base_path, "xnyy_server_log.log")
 logger = logging.getLogger("system logger")
@@ -42,7 +43,7 @@ parser.add_argument('--port', type=int,  help='flask port', default=5000)
 db_config_debug = {
     'host': 'localhost',
     'user': 'root',  # mysql用户，未更改默认为root
-    'password': 'root',  # mysql连接密码，自己设置的
+    'password': '629629',  # mysql连接密码，自己设置的
     'pool_name': 'connection_pool', #连接池名字
     'pool_size': 5 #连接池大小
 }
@@ -52,3 +53,8 @@ def md5_encrypt(text: str) -> str:
     md5_obj = hashlib.md5()
     md5_obj.update(bytes_text)
     return md5_obj.hexdigest()
+
+def check_is_valid(*values) -> tuple[bool, list[int]]:
+    invalid_indices = [i for i, value in enumerate(values) if value is None]
+    return (len(invalid_indices) == 0, invalid_indices)
+
