@@ -16,7 +16,7 @@ db_config = {
 
 employee_info_columns = {
     "id" : "INT AUTO_INCREMENT PRIMARY KEY",
-    "username" : "VARCHAR(20) UNIQUE NOT NULL",
+    "userName" : "VARCHAR(20) UNIQUE NOT NULL",
     "name" : "VARCHAR(20) NOT NULL",
     "password" : "VARCHAR(100)",
     "phone" : "VARCHAR(50)",
@@ -29,9 +29,9 @@ patient_diagnosis = "patient_diagnosis"
 
 patient_info_columns = {
             "id": "INT AUTO_INCREMENT PRIMARY KEY",
-            "patient_id" : "VARCHAR(20) UNIQUE NOT NULL",
+            "patientId" : "VARCHAR(20) UNIQUE NOT NULL",
             "name": "VARCHAR(20) NOT NULL",
-            "sex": "ENUM('Male', 'Female', 'Other')",
+            "sex": "ENUM('1', '0')",
             "age": "INT",
             "description": "TEXT"
         }
@@ -47,7 +47,7 @@ data1 = {
     "name" : "VARCHAR(20) NOT NULL",
     "password" : "VARCHAR(100)",
     "phone" : "VARCHAR(50)",
-    "role" : "m"
+    "role" : ""
 }
 
 mysql_manager = MysqlManager(**db_config)

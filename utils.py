@@ -2,6 +2,7 @@ import os
 import logging
 import argparse
 import hashlib
+import sys
 
 base_path = os.path.abspath(__file__).rsplit('\\', 1)[0]
 print(base_path)
@@ -52,3 +53,8 @@ def md5_encrypt(text: str) -> str:
     md5_obj = hashlib.md5()
     md5_obj.update(bytes_text)
     return md5_obj.hexdigest()
+
+def check_is_valid(*values) -> tuple[bool, list[int]]:
+    invalid_indices = [i for i, value in enumerate(values) if value is None]
+    return (len(invalid_indices) == 0, invalid_indices)
+

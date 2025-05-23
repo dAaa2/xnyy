@@ -9,7 +9,7 @@ class EmployeeBody:
     
     def GetAsDict(self) -> dict:
         ret = {
-            "username" : self.username,
+            "userName" : self.username,
             "name" : self.name,
             "phone" : self.phone,
             "password" : self.password,
@@ -18,7 +18,7 @@ class EmployeeBody:
         return ret
     
     def GetQueryFieldsList() -> list:
-        return ["id", "username", "name", "password", "phone", "role"]
+        return ["id", "userName", "name", "password", "phone", "role"]
 
 class PatientBody:
     def __init__(self, patient_id, name, sex, age, description):
@@ -30,7 +30,7 @@ class PatientBody:
     
     def GetAsDict(self) -> dict:
         ret = {
-            "patient_id" : self.patient_id,
+            "patientId" : self.patient_id,
             "name" : self.name,
             "sex" : self.sex,
             "age" : self.age,
@@ -39,7 +39,7 @@ class PatientBody:
         return ret
 
     def GetQueryFieldsList() -> list:
-        return ["id", "patient_id" ,"name", "sex", "age", "description"]
+        return ["id", "patientId" ,"name", "sex", "age", "description"]
    
 class DiagnosisBody:
     def __init__(self, image_path, id, diagnosis_type):

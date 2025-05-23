@@ -10,14 +10,15 @@ import datetime
 import uuid
 import subprocess
 import shutil
-
+import sys
+from datetime import datetime
 from utils import logger
 # import microexp_processing
 # import mr_processing
 
 from mysql_manager import MysqlManager
 from dict_format import EmployeeBody, ResultBody, PatientBody, DiagnosisBody
-from utils import db_config_debug, parser, md5_encrypt
+from utils import db_config_debug, parser, md5_encrypt, check_is_valid
 
 mysql_manager = MysqlManager(**db_config_debug)
 
@@ -33,6 +34,8 @@ app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg'}
 # app.secret_key = 'secret!'
 # app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+def cur_function_name() -> str:
+    return sys._getframe(1).f_code.co_name if sys._getframe(1) else "<unknown>"
 
 #判断传入文件的格式是否符合要求
 def allowed_file(filename):
@@ -61,13 +64,15 @@ def login():
     # 通过用户名查询用户
     user_data = mysql_manager.query_fields(parser.parse_known_args()[0].employee_db,
                                               parser.parse_known_args()[0].employee_info,
-                                              ["id", "password", "name", "username", "phone", "role"],
+                                              ["id", "password", "name", "userName", "phone", "role"],
                                               {"username" : f"= '{user_name}'"})
     if user_data == []:
+        logger.info(f"{cur_function_name()}  用户不存在，登录失败")
         return jsonify(ResultBody(401, msg="用户不存在").to_dict()), 401
 
     # 验证密码
     if not user_data[0][1]==user_password:
+        logger.info(f"{cur_function_name()}  密码错误，登录失败")
         return jsonify(ResultBody(401, msg="密码错误").to_dict()), 401
 
     # 生成JWT Token
@@ -85,6 +90,8 @@ def login():
         'role': user_data[0][5],
         'token': token
     }
+    
+    logger.info(f"{cur_function_name()}  用户：{user_data[0][0]} 姓名{user_data[0][2]}登录成功")
     return jsonify(response_data.to_dict())
 
 
@@ -93,10 +100,11 @@ def logout():
     data = {"code" : 1}
     data.update({"data":None, "msg":None})
     data = json.dumps(data)
+    logger.info(f"{cur_function_name()}  用户登出")
     return data
 
 #分页查询
-@app.route('/employee/page', methods=['GET'])
+@app.route('/employee/page', methods=['POST'])
 def employee_getinfo_by_page():
     form = request.get_json()
     name = form.get("name")
@@ -118,23 +126,27 @@ def employee_getinfo_by_page():
     if end_idx > len(result):
         end_idx = len(result)
     response_data = ResultBody(1)
-    print(result)
     response_data.data = {"total" : end_idx - start_idx, "records" : \
         [EmployeeBody(*result[i][1:]).GetAsDict() for i in range(start_idx, end_idx)]}
-    print(response_data.data)
+    logger.info(f"{cur_function_name()} 第{page}页查询到{end_idx - start_idx}条数据")
     return jsonify(response_data.to_dict())
 
 #用户注册
 @app.route('/employee/register', methods=['POST'])
 def employee_register():
+    response_data = make_response()
     form = request.get_json()
     username = form.get("username")
     name = form.get("name")
     password = form.get("password")
-    password = md5_encrypt(password)
     phone = form.get("phone")
     role = "user"
-
+    valid = check_is_valid(username, name, password, phone)
+    if valid[0]:
+        password = md5_encrypt(password)
+    else:
+        msg = "参数不全"
+        response_data = ResultBody(0, msg=msg)
     body = EmployeeBody(username, name, password, phone, role).GetAsDict()
     # db_name = parser.parse_args().employee_db
     # table_name = parser.parse_args().employee_info
@@ -144,13 +156,14 @@ def employee_register():
 
     result = mysql_manager.insert_data(db_name, table_name, body)
 
-    response_data = make_response()
-    msg = "注册失败" if not result else None
+    msg = "注册失败" if not result else "注册成功"
     response_data = ResultBody(result, msg = msg)
 
+    logger.info(f"用户:{username} ，名字:{name}, {msg}")
+    
     return jsonify(response_data.to_dict())
 
-@app.route('/employee/<id>', methods=['GET'])
+@app.route('/employee/<id>', methods=['POST'])
 def employee_query_by_id(id):
     form = request.get_json()
     id = form.get("id")
@@ -160,17 +173,20 @@ def employee_query_by_id(id):
     
     response_data = make_response()
     response_data = ResultBody(result != [])
+    msg = "查询成功" if result != [] else "查询失败"
     data = {"id" : id}
     data.update(EmployeeBody(*result[0][1:]).GetAsDict())
     response_data.data = data
+    response_data.msg = msg
+    logger.info(f"{cur_function_name()}  查询用户: {id} {msg}")
     
     return jsonify(response_data.to_dict())
 
-@app.route('/employee/edit_info', methods=['PUT'])
+@app.route('/employee', methods=['PUT'])
 def employee_edit_info():
     form = request.get_json()
     id = form.get("id")
-    username = form.get("username")
+    username = form.get("userName")
     name = form.get("name")
     password = md5_encrypt(form.get("password"))
     phone = form.get("phone")
@@ -181,13 +197,15 @@ def employee_edit_info():
     table_name = parser.parse_args().employee_info
     
     result = mysql_manager.update_data(db_name, table_name, "id", id, body)
-    
+    msg = "修改成功" if result else "修改失败"
     response_data = make_response()
     response_data = ResultBody(result)
-    
+    response_data.msg = msg
+    logger.info(f"{cur_function_name()}  修改用户: {id} {msg}")
+
     return jsonify(response_data.to_dict())
 
-@app.route('/employee/edit_password', methods=['PUT'])
+@app.route('/employee/editPassword', methods=['PUT'])
 def employee_edit_password():
     form = request.get_json()
     id = form.get("id")
@@ -204,24 +222,32 @@ def employee_edit_password():
         return jsonify(response_data.to_dict())
         
     result = mysql_manager.update_data(db_name, table_name, "id", id, {"password" : new_password})
+    msg = "修改成功" if result else "修改失败"
     response_data = ResultBody(result)
+    response_data.msg = msg
+    logger.info(f"{cur_function_name()}  修改用户: {id} {msg}")
     return jsonify(response_data.to_dict())
     
-@app.route('/employee/delete_user', methods=['DELETE'])
-def employee_delete_user():
-    form = request.get_json()
-    id = form.get("id")
-    
+@app.route('/employee/<id>', methods=['DELETE'])
+def employee_delete_user(id):
+    response_data = make_response()
+    if not check_is_valid(id)[0]:
+        response_data = ResultBody(0, msg="无效的id")
+        return jsonify(response_data.to_dict())
     db_name = parser.parse_args().employee_db
     table_name = parser.parse_args().employee_info
     
     result = mysql_manager.delete_data(db_name, table_name, "id", id)
-    response_data = make_response()
+    msg = "删除成功" if result else "删除失败"
+
     response_data = ResultBody(result)
+    response_data.msg = msg
+    logger.info(f"{cur_function_name()}  删除用户: {id} {msg}")
+    
     return jsonify(response_data.to_dict())
     
 #患者分页查询
-@app.route('/patient/page', methods=['GET'])
+@app.route('/patient/page', methods=['POST'])
 def patient_getinfo_by_page():
     form = request.get_json()
     patient_id = form.get("patientId")
@@ -244,10 +270,12 @@ def patient_getinfo_by_page():
     if end_idx > len(result):
         end_idx = len(result)
     response_data = ResultBody(1)
-    print(result)
-    response_data.data = {"total" : end_idx - start_idx, "records" : \
-        [PatientBody(*result[i][1:]).GetAsDict() for i in range(start_idx, end_idx)]}
-    print(response_data.data)
+    update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    records = [PatientBody(*result[i][1:]).GetAsDict().update({"updateTime" : update_time}) for i in range(start_idx, end_idx)]
+    response_data.data = {"total" : end_idx - start_idx, "records" : records}
+    
+    logger.info(f"{cur_function_name()} 第{page}页查询到{end_idx - start_idx}条数据")
+
     return jsonify(response_data.to_dict())
 
 @app.route('/patient/upload', methods=['POST'])
@@ -258,27 +286,32 @@ def patient_image_upload():
     if not image or not allowed_file(image.filename):
         return jsonify(ResultBody(400, msg="无效文件类型").to_dict()), 400
     
-    print(type(image))
     # 保存原始文件
+    response_data = make_response()
     original_filename = secure_filename(image.filename)
     original_filepath = os.path.join(__file__.rsplit("\\", 1)[0], app.config['UPLOAD_FOLDER'])
     original_filepath = os.path.join(original_filepath, original_filename)
     print(original_filepath)
     image.save(original_filepath)
-    
     db_name = parser.parse_args().patient_db
+    table_name = parser.parse_args().patient_info
+    result = mysql_manager.query_fields(db_name, table_name, ['id'], {"id" : f"= {id}"})
+    if result == []:
+        response_data = ResultBody(0, msg="无效的id")
     table_name = parser.parse_args().patient_diagnosis
     result = mysql_manager.insert_data(db_name, table_name, DiagnosisBody(original_filepath, id, diagnosis_type).GetAsDict())
     
-    response_data = make_response()
+    msg = "上传成功" if result else "上传失败"
     response_data = ResultBody(result)
+    response_data.msg = msg
+    logger.info(f"{cur_function_name()}  用户: {id} {msg}")
     return jsonify(response_data.to_dict())
 
 #获取图片 
-@app.route('/patient/<id>', methods=['GET'])
+@app.route('/patient/<id>', methods=['POST'])
 def patient_query_by_id(id):
-    form = request.get_json()
-    id = form.get("id")
+    # form = request.get_json()
+    # id = form.get("id")
     db_name = parser.parse_args().patient_db
     table_name = parser.parse_args().patient_info
     result_patient_info = mysql_manager.query_fields(db_name, table_name, PatientBody.GetQueryFieldsList(), {"id" : f"= {id}"})
@@ -289,39 +322,15 @@ def patient_query_by_id(id):
     response_data = make_response()
     response_data = ResultBody(result_patient_info != [])
     data = {"id" : id}
-    data.update(EmployeeBody(result_patient_info[1:]).GetAsDict())
-    data.update({"imageList" : [image[0] for image in result_image_list]})
+    if result_patient_info != []:
+        data.update(EmployeeBody(result_patient_info[1:]).GetAsDict())
+    if result_image_list:
+        data.update({"imageList" : [image[0] for image in result_image_list]})
     response_data.data = data
     return jsonify(response_data.to_dict())
 
-
-# @app.route('/patient/diagnosis/<id>', methods=['GET'])
-# def patient_diagnosis_query_by_id():
-#     form = request.get_json()
-#     id = form.get("id")
-#     diagnosis_type = form.get("diagnosis_type")
-#     file = request.files['img']
-    
-#     if not file or not allowed_file(file.filename):
-#         return jsonify(ResultBody(400, msg="无效文件类型").to_dict()), 400
-    
-#     original_filename = secure_filename(file.filename)
-#     original_filepath = os.path.join(app.config['UPLOAD_FOLDER'], original_filename)
-#     file.save(original_filepath)
-    
-#     db_name = parser.parse_args().patient_db
-#     table_name = parser.parse_args().patient_diagnosis
-    
-#     name = mysql_manager.query_fields(db_name, table_name, ['name'], {"id" : f"= {id}"})
-#     body = DiagnosisBody(original_filepath, original_filename, id, name[0], diagnosis_type)
-#     result = mysql_manager.insert_data(db_name, table_name, body)
-    
-#     response_data = make_response()
-#     response_data = ResultBody(result)
-#     return jsonify(response_data.to_dict())
-
 #图片删除依据图片的地址
-@app.route('/patient/diagnosis/deleteImage', methods=['DELETE'])
+@app.route('/patient/deleteImage', methods=['DELETE'])
 def patient_diagnosis_delete_image():
     form = request.get_json()
     image_path = form.get("imageUrl")
@@ -334,9 +343,35 @@ def patient_diagnosis_delete_image():
     response_data = ResultBody(0)
     
     result = mysql_manager.delete_data(db_name, table_name, "image_path", image_path)
+    msg = "删除成功" if result else "删除失败"
     response_data = ResultBody(result)
+    response_data.msg = msg
+    logger.info(f"{cur_function_name()}  患者: {id} {msg}")
     
     return jsonify(response_data.to_dict())
+
+#批量删除患者
+@app.route('/patient', methods=['DELETE'])
+def patients_delete():
+    form = request.get_json()
+    ids = form.get("ids")
+    
+    db_name = parser.parse_args().patient_db
+    table_name = parser.parse_args().patient_info
+    
+    response_data = make_response()
+    response_data = ResultBody(0)
+    result = 1
+    
+    for id in ids:
+        result &= mysql_manager.delete_data(db_name, table_name, "id", id)
+    msg = "删除成功" if result else "删除失败"
+    response_data = ResultBody(result)
+    response_data.msg = msg
+    logger.info(f"{cur_function_name()} 批量{msg}")
+    
+    return jsonify(response_data.to_dict())
+
 
 @app.route('/patient/edit_info', methods=['PUT'])
 def patient_edit_info():
@@ -355,10 +390,13 @@ def patient_edit_info():
     result = mysql_manager.update_data(db_name, table_name, "id", id, body)
     
     response_data = make_response()
+    msg = "修改成功" if result else "修改失败"
     response_data = ResultBody(result)
+    response_data.msg = msg
+    logger.info(f"{cur_function_name()} 患者：{id} {msg}")
     return jsonify(response_data.to_dict())
 
-@app.route('/patient/add', methods=['POST'])
+@app.route('/patient', methods=['POST'])
 def patient_add():
     form = request.get_json()
     patient_id = form.get("patientId")
@@ -374,7 +412,10 @@ def patient_add():
     result = mysql_manager.insert_data(db_name, table_name, body)
     
     response_data = make_response()
+    msg = "添加成功" if result else "添加失败"
     response_data = ResultBody(result)
+    response_data.msg = msg
+    logger.info(f"{cur_function_name()} 患者：{name} {msg}")
     return jsonify(response_data.to_dict())
 
 #测试返回类型，返回一个可以在前端下载图片的地址
