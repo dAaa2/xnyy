@@ -39,7 +39,7 @@ patient_info_columns = {
 diagnosis_columns = {
             "image_path": "VARCHAR(255) PRIMARY KEY",
             "id": "INT",
-            "diagnosis_type":"VARCHAR(20) NOT NULL"
+            "diagnosis_type":"VARCHAR(20)"
         }
 
 data1 = {

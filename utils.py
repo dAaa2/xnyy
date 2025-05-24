@@ -3,6 +3,9 @@ import logging
 import argparse
 import hashlib
 import sys
+import uuid
+from logging.handlers import TimedRotatingFileHandler
+
 
 base_path = os.path.abspath(__file__).rsplit('/', 1)[0]
 print(base_path)
@@ -31,6 +34,15 @@ if not logger.handlers:
             file_handler.setFormatter(file_formatter)
             logger.addHandler(file_handler)
             
+            backup_handler = TimedRotatingFileHandler(
+                filename=log_file,
+                when='midnight',  # 每天午夜轮转
+                interval=1,  # 轮转间隔（1 天）
+                backupCount=7,  # 保留 7 个备份文件
+                encoding='utf-8'  # 支持中文
+            )
+            logger.addHandler(backup_handler)
+            
 
 parser = argparse.ArgumentParser(description="Global Setting")
 parser.add_argument('--employee_db', type=str,  help='user datadb name', default="employee")
@@ -58,3 +70,9 @@ def check_is_valid(*values) -> tuple[bool, list[int]]:
     invalid_indices = [i for i, value in enumerate(values) if value is None]
     return (len(invalid_indices) == 0, invalid_indices)
 
+def generate_unique_filename(filename: str) -> str:
+    # 获取扩展名
+    _, ext = os.path.splitext(filename)
+    # 生成唯一文件名
+    unique_name = f"{uuid.uuid4().hex}{ext}"
+    return unique_name
