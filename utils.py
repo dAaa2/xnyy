@@ -4,7 +4,7 @@ import argparse
 import hashlib
 import sys
 
-base_path = os.path.abspath(__file__).rsplit('\\', 1)[0]
+base_path = os.path.abspath(__file__).rsplit('/', 1)[0]
 print(base_path)
 log_file = os.path.join(base_path, "xnyy_server_log.log")
 logger = logging.getLogger("system logger")
@@ -41,9 +41,9 @@ parser.add_argument('--patient_diagnosis', type=str,  help='patient diagnosis re
 parser.add_argument('--port', type=int,  help='flask port', default=5000)
 
 db_config_debug = {
-    'host': 'localhost',
-    'user': 'root',  # mysql用户，未更改默认为root
-    'password': '629629',  # mysql连接密码，自己设置的
+    'host': '10.17.242.16',
+    'user': 'linux_remote',  # mysql用户，未更改默认为root
+    'password': '123456',  # mysql连接密码，自己设置的
     'pool_name': 'connection_pool', #连接池名字
     'pool_size': 5 #连接池大小
 }

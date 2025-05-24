@@ -47,7 +47,7 @@
       <paths name="本部">
         <serverdata>
           <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/home/ff/code/MEAN_Spot-then-recognize-linux" local="$PROJECT_DIR$/microexp/detection" web="/" />
           </mappings>
         </serverdata>
       </paths>

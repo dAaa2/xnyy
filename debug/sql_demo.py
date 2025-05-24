@@ -5,9 +5,9 @@ sys.path.append(__file__.rsplit("\\", 2)[0])
 from mysql_manager import MysqlManager
 
 db_config = {
-    'host': 'localhost',
-    'user': 'root',  # mysql用户，未更改默认为root
-    'password': 'demaxiya66',  # mysql连接密码，自己设置的
+    'host': '10.17.242.16',
+    'user': 'linux_remote',  # mysql用户，未更改默认为root
+    'password': '123456',  # mysql连接密码，自己设置的
     'pool_name': 'connection_pool', #连接池名字
     'pool_size': 5 #连接池大小
 }

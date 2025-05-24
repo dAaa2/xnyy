@@ -16,16 +16,20 @@ from utils import logger
 # import microexp_processing
 # import mr_processing
 
+import random
 from mysql_manager import MysqlManager
 from dict_format import EmployeeBody, ResultBody, PatientBody, DiagnosisBody
 from utils import db_config_debug, parser, md5_encrypt, check_is_valid
+# import sys
+# sys.path.append("/home/ff/CZW/xnyy/mr/nnUNet")
+# from mr.nnUNet import predicet_braints
 
 mysql_manager = MysqlManager(**db_config_debug)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)  # 生成24字节的随机密钥
 app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg'}
+app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'gz'}
 # UPLOAD_FOLDER = 'uploads'
 # if not os.path.isdir(UPLOAD_FOLDER):
 #     os.mkdir(UPLOAD_FOLDER)
@@ -90,7 +94,7 @@ def login():
         'role': user_data[0][5],
         'token': token
     }
-    
+
     logger.info(f"{cur_function_name()}  用户：{user_data[0][0]} 姓名{user_data[0][2]}登录成功")
     return jsonify(response_data.to_dict())
 
@@ -112,17 +116,17 @@ def employee_getinfo_by_page():
     page_size = form.get("pageSize")
     start_idx = (page - 1) * page_size
     end_idx = page * page_size
-    
+
     db_name = parser.parse_known_args()[0].employee_db
     table_name = parser.parse_known_args()[0].employee_info
-    
+
     result = mysql_manager.query_fields(db_name, table_name, EmployeeBody.GetQueryFieldsList(), \
         {"name" : f"LIKE '%{name if name else str()}%'"})
     response_data = make_response()
-    
+
     if result == [] or len(result) < start_idx + 1:
-         return jsonify(ResultBody(9, msg = "未查询到用户").to_dict()) 
-    
+         return jsonify(ResultBody(9, msg = "未查询到用户").to_dict())
+
     if end_idx > len(result):
         end_idx = len(result)
     response_data = ResultBody(1)
@@ -160,7 +164,7 @@ def employee_register():
     response_data = ResultBody(result, msg = msg)
 
     logger.info(f"用户:{username} ，名字:{name}, {msg}")
-    
+
     return jsonify(response_data.to_dict())
 
 @app.route('/employee/<id>', methods=['POST'])
@@ -170,7 +174,7 @@ def employee_query_by_id(id):
     db_name = parser.parse_args().employee_db
     table_name = parser.parse_args().employee_info
     result = mysql_manager.query_fields(db_name, table_name, EmployeeBody.GetQueryFieldsList(), {"id" : f"= {id}"})
-    
+
     response_data = make_response()
     response_data = ResultBody(result != [])
     msg = "查询成功" if result != [] else "查询失败"
@@ -179,7 +183,7 @@ def employee_query_by_id(id):
     response_data.data = data
     response_data.msg = msg
     logger.info(f"{cur_function_name()}  查询用户: {id} {msg}")
-    
+
     return jsonify(response_data.to_dict())
 
 @app.route('/employee', methods=['PUT'])
@@ -191,11 +195,11 @@ def employee_edit_info():
     password = md5_encrypt(form.get("password"))
     phone = form.get("phone")
     role = form.get("role")
-    
+
     body = EmployeeBody(username, name, password, phone, role).GetAsDict()
     db_name = parser.parse_args().employee_db
     table_name = parser.parse_args().employee_info
-    
+
     result = mysql_manager.update_data(db_name, table_name, "id", id, body)
     msg = "修改成功" if result else "修改失败"
     response_data = make_response()
@@ -211,23 +215,23 @@ def employee_edit_password():
     id = form.get("id")
     old_password = md5_encrypt(form.get("oldPassword"))
     new_password = md5_encrypt(form.get("newPassword"))
-    
+
     response_data = make_response()
-    
+
     db_name = parser.parse_args().employee_db
     table_name = parser.parse_args().employee_info
-    
+
     if old_password != mysql_manager.query_fields(db_name, table_name, ["password"], {"id" : f"= {id}"})[0][0]:
         response_data = ResultBody(0)
         return jsonify(response_data.to_dict())
-        
+
     result = mysql_manager.update_data(db_name, table_name, "id", id, {"password" : new_password})
     msg = "修改成功" if result else "修改失败"
     response_data = ResultBody(result)
     response_data.msg = msg
     logger.info(f"{cur_function_name()}  修改用户: {id} {msg}")
     return jsonify(response_data.to_dict())
-    
+
 @app.route('/employee/<id>', methods=['DELETE'])
 def employee_delete_user(id):
     response_data = make_response()
@@ -236,16 +240,16 @@ def employee_delete_user(id):
         return jsonify(response_data.to_dict())
     db_name = parser.parse_args().employee_db
     table_name = parser.parse_args().employee_info
-    
+
     result = mysql_manager.delete_data(db_name, table_name, "id", id)
     msg = "删除成功" if result else "删除失败"
 
     response_data = ResultBody(result)
     response_data.msg = msg
     logger.info(f"{cur_function_name()}  删除用户: {id} {msg}")
-    
+
     return jsonify(response_data.to_dict())
-    
+
 #患者分页查询
 @app.route('/patient/page', methods=['POST'])
 def patient_getinfo_by_page():
@@ -256,24 +260,24 @@ def patient_getinfo_by_page():
     page_size = form.get("pageSize")
     start_idx = (page - 1) * page_size
     end_idx = page * page_size
-    
+
     db_name = parser.parse_args().patient_db
     table_name = parser.parse_args().patient_info
-    
+
     result = mysql_manager.query_fields(db_name, table_name, PatientBody.GetQueryFieldsList(), \
         {"name" : f"LIKE '%{name if name else str()}%'", "patient_id" : f"LIKE '%{patient_id if patient_id else str()}%'"})
     response_data = make_response()
-    
+
     if result == [] or len(result) < start_idx + 1:
-         return jsonify(ResultBody(9, msg = "未查询到用户").to_dict()) 
-    
+         return jsonify(ResultBody(9, msg = "未查询到用户").to_dict())
+
     if end_idx > len(result):
         end_idx = len(result)
     response_data = ResultBody(1)
     update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     records = [PatientBody(*result[i][1:]).GetAsDict().update({"updateTime" : update_time}) for i in range(start_idx, end_idx)]
     response_data.data = {"total" : end_idx - start_idx, "records" : records}
-    
+
     logger.info(f"{cur_function_name()} 第{page}页查询到{end_idx - start_idx}条数据")
 
     return jsonify(response_data.to_dict())
@@ -285,7 +289,7 @@ def patient_image_upload():
     image = request.files["file"]
     if not image or not allowed_file(image.filename):
         return jsonify(ResultBody(400, msg="无效文件类型").to_dict()), 400
-    
+
     # 保存原始文件
     response_data = make_response()
     original_filename = secure_filename(image.filename)
@@ -300,14 +304,14 @@ def patient_image_upload():
         response_data = ResultBody(0, msg="无效的id")
     table_name = parser.parse_args().patient_diagnosis
     result = mysql_manager.insert_data(db_name, table_name, DiagnosisBody(original_filepath, id, diagnosis_type).GetAsDict())
-    
+
     msg = "上传成功" if result else "上传失败"
     response_data = ResultBody(result)
     response_data.msg = msg
     logger.info(f"{cur_function_name()}  用户: {id} {msg}")
     return jsonify(response_data.to_dict())
 
-#获取图片 
+#获取图片
 @app.route('/patient/<id>', methods=['POST'])
 def patient_query_by_id(id):
     # form = request.get_json()
@@ -315,10 +319,10 @@ def patient_query_by_id(id):
     db_name = parser.parse_args().patient_db
     table_name = parser.parse_args().patient_info
     result_patient_info = mysql_manager.query_fields(db_name, table_name, PatientBody.GetQueryFieldsList(), {"id" : f"= {id}"})
-    
+
     table_name = parser.parse_args().patient_diagnosis
     result_image_list = mysql_manager.query_fields(db_name, table_name, ["image_path"], {"id" : f"= '{id}'"})
-    
+
     response_data = make_response()
     response_data = ResultBody(result_patient_info != [])
     data = {"id" : id}
@@ -335,19 +339,19 @@ def patient_diagnosis_delete_image():
     form = request.get_json()
     image_path = form.get("imageUrl")
     id = form.get("id")
-    
+
     db_name = parser.parse_args().patient_db
     table_name = parser.parse_args().patient_diagnosis
-    
+
     response_data = make_response()
     response_data = ResultBody(0)
-    
+
     result = mysql_manager.delete_data(db_name, table_name, "image_path", image_path)
     msg = "删除成功" if result else "删除失败"
     response_data = ResultBody(result)
     response_data.msg = msg
     logger.info(f"{cur_function_name()}  患者: {id} {msg}")
-    
+
     return jsonify(response_data.to_dict())
 
 #批量删除患者
@@ -355,21 +359,21 @@ def patient_diagnosis_delete_image():
 def patients_delete():
     form = request.get_json()
     ids = form.get("ids")
-    
+
     db_name = parser.parse_args().patient_db
     table_name = parser.parse_args().patient_info
-    
+
     response_data = make_response()
     response_data = ResultBody(0)
     result = 1
-    
+
     for id in ids:
         result &= mysql_manager.delete_data(db_name, table_name, "id", id)
     msg = "删除成功" if result else "删除失败"
     response_data = ResultBody(result)
     response_data.msg = msg
     logger.info(f"{cur_function_name()} 批量{msg}")
-    
+
     return jsonify(response_data.to_dict())
 
 
@@ -382,13 +386,13 @@ def patient_edit_info():
     sex = form.get("sex")
     age = form.get("age")
     description = form.get("description")
-    
+
     body = PatientBody(patient_id, name, sex, age, description).GetAsDict()
     db_name = parser.parse_args().patient_db
     table_name = parser.parse_args().patient_info
-    
+
     result = mysql_manager.update_data(db_name, table_name, "id", id, body)
-    
+
     response_data = make_response()
     msg = "修改成功" if result else "修改失败"
     response_data = ResultBody(result)
@@ -404,13 +408,13 @@ def patient_add():
     sex = form.get("sex")
     age = form.get("age")
     description = form.get("description")
-    
+
     body = PatientBody(patient_id, name, sex, age, description).GetAsDict()
     db_name = parser.parse_args().patient_db
     table_name = parser.parse_args().patient_info
-    
+
     result = mysql_manager.insert_data(db_name, table_name, body)
-    
+
     response_data = make_response()
     msg = "添加成功" if result else "添加失败"
     response_data = ResultBody(result)
@@ -422,10 +426,10 @@ def patient_add():
 @app.route('/algorithm', methods=['GET', 'POST'])
 def upload_file():
     #判断传入数据是否合法：
-    if 'video' not in request.files or 'algo' not in request.form:
+    if 'file' not in request.files or 'algo' not in request.form:
         return jsonify(ResultBody(400, msg="缺少文件或算法参数").to_dict()), 400
 
-    file = request.files['video']
+    file = request.files['file']
     algo = request.form['algo']
 
     # 保存原始文件
@@ -456,12 +460,15 @@ def upload_file():
             encoding='utf-8',  # 设置编码格式
             errors='replace'  # 防止乱码
         )
+
         # 解析输出
         # 获取标准输出的所有行
         stdout_lines = result.stdout.strip().split('\n')
 
         # 只取最后两行
         last_two_lines = stdout_lines[-2:] if len(stdout_lines) >= 2 else stdout_lines
+
+        onset_path, apex_path = None, None
 
         if len(last_two_lines) >= 2:
             onset_line, apex_line = last_two_lines
@@ -472,34 +479,114 @@ def upload_file():
         print("Onset Path: ", onset_path)
         print("Apex Path: ", apex_path)
 
-        # 检查执行是否成功
-        # if result.returncode != 0:
-        #     return jsonify(ResultBody(500, msg="算法执行失败", data={"error": result.stderr}).to_dict()), 500
+        exe_path = "/home/ff/CZW/xnyy/microexp/identify/final_predict"
+
+        cmd = [
+            exe_path,
+            onset_path,
+            apex_path
+        ]
+
+        result = subprocess.run(
+            cmd,
+            capture_output=True,  # 捕获 stdout 和 stderr
+            encoding='utf-8',  # 设置编码格式
+            errors='replace'  # 防止乱码
+        )
+
+        # 提取 output image path
+        for line in result.stdout.strip().split('\n'):
+            if line.startswith('output image path:'):
+                output_image_path = line.split(':', 1)[1].strip()
+                break
+            else:
+                output_image_path = None
+
+        if output_image_path:
+            # 提取文件名
+            output_filename = os.path.basename(output_image_path)
+
+            # 将文件复制到 uploads 目录
+            shutil.copy(output_image_path, os.path.join(app.config['UPLOAD_FOLDER'], output_filename))
+
+            # 构造正确的 download_url
+            download_url = url_for('download_file', filename=output_filename, _external=True)
+
+            return jsonify(ResultBody(200, data={'download_url': download_url}).to_dict())
+        else:
+            return jsonify(ResultBody(500, msg="无法解析输出图像路径").to_dict()), 500
+
 
     elif algo in ("mr1", "mr2"):
-        # # 根据文件名前缀生成处理结果
-        # prefix = original_filename.split('.')[0]
-        # save_filename = f"{prefix}_pred.png"
-        # save_filepath = os.path.join(app.config['UPLOAD_FOLDER'], save_filename)
-        # # 此处需补充脑肿瘤识别算法
-        # mr_processing.add_text_watermark(original_filepath,save_filepath)
-        pass
+        # 确保上传的是图片
+        if not allowed_file(file.filename):
+            return jsonify(ResultBody(400, msg="无效的图片格式").to_dict()), 400
+
+        # 创建临时目录
+        unique_id = f"{random.randint(0, 9999):04d}"
+        input_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'input', unique_id)
+        output_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'output', unique_id)
+
+        os.makedirs(input_dir, exist_ok=True)
+        os.makedirs(output_dir, exist_ok=True)
+
+        # 保存原始图像到 input_dir
+        original_filename = secure_filename(file.filename)
+        file_extension = original_filename.rsplit('.', 1)[1]
+        input_image_path = os.path.join(input_dir, f"brain_{unique_id}.nii.{file_extension}")
+        file.save(input_image_path)
+
+        # 构造算法命令行（假设是 Python 脚本）
+        script_path = "/home/ff/CZW/xnyy/mr/nnUNet/predicet_braints.py"  # 替换为你的实际脚本路径
+        cmd = [
+            sys.executable,  # 使用当前 Python 解释器
+            script_path,
+            "--input", input_dir,
+            "--output", output_dir
+        ]
+
+        # 执行算法
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            encoding='utf-8',
+            errors='replace'
+        )
+
+        print(result)
+
+        # result = predicet_braints.predict_segmentation(
+        #     input_image_dir=input_dir,  # 输入图像目录
+        # )
+
+        if result.returncode != 0:
+            return jsonify(ResultBody(500, msg="算法执行失败", data={"error": result.stderr}).to_dict()), 500
+
+        # 获取输出图片路径（假设输出两张图）
+        output_files = sorted(os.listdir(output_dir))
+        if len(output_files) < 2:
+            return jsonify(ResultBody(500, msg="算法未生成足够的输出图像").to_dict()), 500
+
+        output1_path = os.path.join(output_dir, output_files[0])
+        output2_path = os.path.join(output_dir, output_files[1])
+
+        # 构造 download_url（第一张图）
+        output1_filename = os.path.basename(output1_path)
+        download_url = url_for('download_file', filename=os.path.join(unique_id, output1_filename), _external=True)
+
+        # 第二张图存入数据库
+        db_name = parser.parse_args().patient_db
+        table_name = parser.parse_args().patient_diagnosis
+
+        diagnosis_data = DiagnosisBody(image_path=output2_path, patient_id=id, diagnosis_type=algo).GetAsDict()
+        insert_result = mysql_manager.insert_data(db_name, table_name, diagnosis_data)
+
+        if not insert_result:
+            return jsonify(ResultBody(500, msg="写入数据库失败").to_dict()), 500
+
+        return jsonify(ResultBody(200, data={'download_url': download_url}).to_dict())
     else:
         return jsonify(ResultBody(400, msg="未知算法").to_dict()), 400
-
-    # 提取原始路径中的文件名
-    onset_filename = os.path.basename(onset_path)  # img23.jpg
-
-    print("onset filename: ", onset_filename)
-
-    # 复制到 uploads 目录
-    shutil.copy(onset_path, os.path.join(app.config['UPLOAD_FOLDER'], onset_filename))
-
-    # 构造正确的 download_url
-    onset_url = url_for('download_file', filename=onset_filename, _external=True)
-
-    download_url = url_for('download_file', filename=onset_path, _external=True)
-    return jsonify(ResultBody(200, data={'download_url': onset_url}).to_dict())
 
 #拿到前端返回的图片
 @app.route('/uploads/<path:filename>')
@@ -508,4 +595,4 @@ def download_file(filename):
 
 
 if __name__ == '__main__':
-    app.run(host = "0.0.0.0",port="5000")
+    app.run(host = "0.0.0.0", port=5000, threaded=False)
