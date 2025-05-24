@@ -21,7 +21,7 @@ class EmployeeBody:
         return ["id", "userName", "name", "password", "phone", "role"]
 
 class PatientBody:
-    def __init__(self, patient_id, name, sex, age, description):
+    def __init__(self, patient_id, name, sex, age, description = None):
         self.patient_id = patient_id
         self.name = name
         self.sex = sex
@@ -42,7 +42,7 @@ class PatientBody:
         return ["id", "patientId" ,"name", "sex", "age", "description"]
    
 class DiagnosisBody:
-    def __init__(self, image_path, id, diagnosis_type):
+    def __init__(self, image_path, id, diagnosis_type = None):
         self.image_path = image_path
         self.id = id
         self.diagnosis_type = diagnosis_type    
