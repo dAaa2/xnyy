@@ -70,3 +70,87 @@
 2025-05-15 18:37:59,524 - system logger - INFO - ï¿½ï¿½ï¿½Ó³ï¿½ connection_pool ï¿½ï¿½ï¿½ï¿½ï¿½É¹ï¿½ï¿½ï¿½ï¿½Ø´ï¿½Ğ¡: 5
 2025-05-15 18:39:57,034 - system logger - INFO - ï¿½ï¿½ï¿½Ó³ï¿½ connection_pool ï¿½ï¿½ï¿½ï¿½ï¿½É¹ï¿½ï¿½ï¿½ï¿½Ø´ï¿½Ğ¡: 5
 2025-05-22 18:30:34,062 - system logger - INFO - ï¿½ï¿½ï¿½Ó³ï¿½ connection_pool ï¿½ï¿½ï¿½ï¿½ï¿½É¹ï¿½ï¿½ï¿½ï¿½Ø´ï¿½Ğ¡: 5
+2025-05-24 22:58:29,717 - system logger - INFO - Á¬½Ó³Ø connection_pool ´´½¨³É¹¦£¬³Ø´óĞ¡: 5
+è¿æ¥æ±  connection_pool åˆ›å»ºæˆåŠŸï¼Œæ± å¤§å°: 5
+2025-05-24 22:58:39,569 - system logger - INFO - Á¬½Ó³Ø connection_pool ´´½¨³É¹¦£¬³Ø´óĞ¡: 5
+è¿æ¥æ±  connection_pool åˆ›å»ºæˆåŠŸï¼Œæ± å¤§å°: 5
+2025-05-24 23:35:12,519 - system logger - INFO - Á¬½Ó³Ø connection_pool ´´½¨³É¹¦£¬³Ø´óĞ¡: 5
+è¿æ¥æ±  connection_pool åˆ›å»ºæˆåŠŸï¼Œæ± å¤§å°: 5
+2025-05-24 23:35:12,522 - system logger - ERROR - ´´½¨Êı¾İ¿â´íÎó: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+åˆ›å»ºæ•°æ®åº“é”™è¯¯: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+2025-05-24 23:35:12,524 - system logger - ERROR - »ñÈ¡Á¬½Ó´íÎó: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+è·å–è¿æ¥é”™è¯¯: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+2025-05-24 23:35:12,524 - system logger - ERROR - »ñÈ¡Á¬½Ó´íÎó: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+è·å–è¿æ¥é”™è¯¯: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+2025-05-24 23:35:12,525 - system logger - ERROR - »ñÈ¡Á¬½Ó´íÎó: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+è·å–è¿æ¥é”™è¯¯: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+2025-05-24 23:35:12,525 - system logger - INFO - ÉèÖÃÆğÊ¼ÖµÊ§°Ü
+è®¾ç½®èµ·å§‹å€¼å¤±è´¥
+2025-05-24 23:39:59,445 - system logger - INFO - Á¬½Ó³Ø connection_pool ´´½¨³É¹¦£¬³Ø´óĞ¡: 5
+è¿æ¥æ±  connection_pool åˆ›å»ºæˆåŠŸï¼Œæ± å¤§å°: 5
+2025-05-24 23:39:59,446 - system logger - ERROR - ´´½¨Êı¾İ¿â´íÎó: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+åˆ›å»ºæ•°æ®åº“é”™è¯¯: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+2025-05-24 23:39:59,447 - system logger - ERROR - »ñÈ¡Á¬½Ó´íÎó: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+è·å–è¿æ¥é”™è¯¯: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+2025-05-24 23:39:59,447 - system logger - ERROR - »ñÈ¡Á¬½Ó´íÎó: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+è·å–è¿æ¥é”™è¯¯: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+2025-05-24 23:39:59,448 - system logger - ERROR - »ñÈ¡Á¬½Ó´íÎó: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+è·å–è¿æ¥é”™è¯¯: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+2025-05-24 23:39:59,448 - system logger - INFO - ÉèÖÃÆğÊ¼ÖµÊ§°Ü
+è®¾ç½®èµ·å§‹å€¼å¤±è´¥
+2025-05-24 23:42:16,531 - system logger - INFO - Á¬½Ó³Ø connection_pool ´´½¨³É¹¦£¬³Ø´óĞ¡: 5
+è¿æ¥æ±  connection_pool åˆ›å»ºæˆåŠŸï¼Œæ± å¤§å°: 5
+2025-05-24 23:42:16,532 - system logger - ERROR - ´´½¨Êı¾İ¿â´íÎó: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+åˆ›å»ºæ•°æ®åº“é”™è¯¯: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+2025-05-24 23:42:16,533 - system logger - ERROR - »ñÈ¡Á¬½Ó´íÎó: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+è·å–è¿æ¥é”™è¯¯: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+2025-05-24 23:42:16,534 - system logger - ERROR - »ñÈ¡Á¬½Ó´íÎó: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+è·å–è¿æ¥é”™è¯¯: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+2025-05-24 23:42:16,534 - system logger - ERROR - »ñÈ¡Á¬½Ó´íÎó: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+è·å–è¿æ¥é”™è¯¯: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+2025-05-24 23:42:16,535 - system logger - INFO - ÉèÖÃÆğÊ¼ÖµÊ§°Ü
+è®¾ç½®èµ·å§‹å€¼å¤±è´¥
+2025-05-24 23:44:23,355 - system logger - INFO - Á¬½Ó³Ø connection_pool ´´½¨³É¹¦£¬³Ø´óĞ¡: 5
+è¿æ¥æ±  connection_pool åˆ›å»ºæˆåŠŸï¼Œæ± å¤§å°: 5
+2025-05-24 23:44:23,356 - system logger - ERROR - ´´½¨Êı¾İ¿â´íÎó: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+åˆ›å»ºæ•°æ®åº“é”™è¯¯: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+2025-05-24 23:44:23,356 - system logger - ERROR - »ñÈ¡Á¬½Ó´íÎó: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+è·å–è¿æ¥é”™è¯¯: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+2025-05-24 23:44:23,357 - system logger - ERROR - »ñÈ¡Á¬½Ó´íÎó: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+è·å–è¿æ¥é”™è¯¯: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+2025-05-24 23:44:23,357 - system logger - ERROR - »ñÈ¡Á¬½Ó´íÎó: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+è·å–è¿æ¥é”™è¯¯: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+2025-05-24 23:44:23,357 - system logger - INFO - ÉèÖÃÆğÊ¼ÖµÊ§°Ü
+è®¾ç½®èµ·å§‹å€¼å¤±è´¥
+2025-05-24 23:44:26,529 - system logger - INFO - Á¬½Ó³Ø connection_pool ´´½¨³É¹¦£¬³Ø´óĞ¡: 5
+è¿æ¥æ±  connection_pool åˆ›å»ºæˆåŠŸï¼Œæ± å¤§å°: 5
+2025-05-24 23:44:26,530 - system logger - ERROR - ´´½¨Êı¾İ¿â´íÎó: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+åˆ›å»ºæ•°æ®åº“é”™è¯¯: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+2025-05-24 23:44:26,531 - system logger - ERROR - »ñÈ¡Á¬½Ó´íÎó: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+è·å–è¿æ¥é”™è¯¯: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+2025-05-24 23:44:26,531 - system logger - ERROR - »ñÈ¡Á¬½Ó´íÎó: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+è·å–è¿æ¥é”™è¯¯: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+2025-05-24 23:44:26,532 - system logger - ERROR - »ñÈ¡Á¬½Ó´íÎó: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+è·å–è¿æ¥é”™è¯¯: 1044 (42000): Access denied for user 'linux_remote'@'%' to database 'patient'
+2025-05-24 23:44:26,532 - system logger - INFO - ÉèÖÃÆğÊ¼ÖµÊ§°Ü
+è®¾ç½®èµ·å§‹å€¼å¤±è´¥
+2025-05-24 23:44:36,736 - system logger - INFO - Á¬½Ó³Ø connection_pool ´´½¨³É¹¦£¬³Ø´óĞ¡: 5
+è¿æ¥æ±  connection_pool åˆ›å»ºæˆåŠŸï¼Œæ± å¤§å°: 5
+2025-05-24 23:44:36,745 - system logger - INFO - Êı¾İ¿â patient ´´½¨³É¹¦»òÒÑ´æÔÚ
+æ•°æ®åº“ patient åˆ›å»ºæˆåŠŸæˆ–å·²å­˜åœ¨
+2025-05-24 23:44:36,828 - system logger - INFO - ±í patient.patient_info ´´½¨³É¹¦»òÒÑ´æÔÚ
+è¡¨ patient.patient_info åˆ›å»ºæˆåŠŸæˆ–å·²å­˜åœ¨
+2025-05-24 23:44:36,867 - system logger - INFO - ±í patient.patient_diagnosis ´´½¨³É¹¦»òÒÑ´æÔÚ
+è¡¨ patient.patient_diagnosis åˆ›å»ºæˆåŠŸæˆ–å·²å­˜åœ¨
+2025-05-24 23:44:36,889 - system logger - INFO - ±í patient.patient_info ÉèÖÃÆğÊ¼Ö÷¼üÎª10000
+è¡¨ patient.patient_info è®¾ç½®èµ·å§‹ä¸»é”®ä¸º10000
+2025-05-24 23:44:36,926 - system logger - INFO - Êı¾İ¿â employee ´´½¨³É¹¦»òÒÑ´æÔÚ
+æ•°æ®åº“ employee åˆ›å»ºæˆåŠŸæˆ–å·²å­˜åœ¨
+2025-05-24 23:44:36,988 - system logger - INFO - ±í employee.employee_info ´´½¨³É¹¦»òÒÑ´æÔÚ
+è¡¨ employee.employee_info åˆ›å»ºæˆåŠŸæˆ–å·²å­˜åœ¨
+2025-05-24 23:44:37,005 - system logger - INFO - ±í employee.employee_info ÉèÖÃÆğÊ¼Ö÷¼üÎª10000
+è¡¨ employee.employee_info è®¾ç½®èµ·å§‹ä¸»é”®ä¸º10000
+2025-05-24 23:44:37,014 - system logger - INFO - ³É¹¦²åÈë 1 ÌõÊı¾İµ½ employee.employee_info
+æˆåŠŸæ’å…¥ 1 æ¡æ•°æ®åˆ° employee.employee_info
+2025-05-24 23:46:33,464 - system logger - INFO - Á¬½Ó³Ø connection_pool ´´½¨³É¹¦£¬³Ø´óĞ¡: 5
+è¿æ¥æ±  connection_pool åˆ›å»ºæˆåŠŸï¼Œæ± å¤§å°: 5

@@ -9,7 +9,7 @@ employee_info = "employee_info"
 db_config = {
     'host': 'localhost',
     'user': 'root',  # mysql用户，未更改默认为root
-    'password': '629629',  # mysql连接密码，自己设置的
+    'password': '12345678',  # mysql连接密码，自己设置的
     'pool_name': 'connection_pool', #连接池名字
     'pool_size': 5 #连接池大小
 }

@@ -13,8 +13,13 @@ import shutil
 import sys
 from utils import logger
 import uuid
+import cv2
+import re
+import tempfile
 # import microexp_processing
 # import mr_processing
+from flask import Flask
+from flask_cors import CORS  # 导入 CORS 模块
 
 import random
 from mysql_manager import MysqlManager
@@ -24,12 +29,14 @@ from utils import db_config_debug, parser, md5_encrypt, check_is_valid, generate
 mysql_manager = MysqlManager(**db_config_debug)
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 50MB
 app.config['SECRET_KEY'] = os.urandom(24)  # 生成24字节的随机密钥
 app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'gz'}
+app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'nii.gz', 'nii'}
 # UPLOAD_FOLDER = 'uploads'
 # if not os.path.isdir(UPLOAD_FOLDER):
 #     os.mkdir(UPLOAD_FOLDER)
+CORS(app)  # 启用默认的 CORS 配置，允许所有来源和方法
 
 
 # app.secret_key = 'secret!'
@@ -40,7 +47,7 @@ def cur_function_name() -> str:
 
 #判断传入文件的格式是否符合要求
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+    return filename.lower().endswith(('.nii.gz', '.avi', '.jpg', '.img', '.hdr', '.nii'))
 
 def extract_image_path(line):
     start_idx = line.find('(') + 1
@@ -48,13 +55,46 @@ def extract_image_path(line):
     path = line[start_idx:end_idx]
     return path
 
+def extract_first_and_last_frame(video_path):
+    # 创建一个临时目录
+    temp_dir = tempfile.mkdtemp()
+
+    # 打开视频文件
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        raise IOError(f"Cannot open video file: {video_path}")
+
+    # 获取视频的总帧数
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    # 读取第一帧
+    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+    ret, first_frame = cap.read()
+    if not ret:
+        cap.release()
+        raise RuntimeError("Failed to read the first frame")
+    first_frame_path = os.path.join(temp_dir, "img1.jpg")
+    cv2.imwrite(first_frame_path, first_frame)
+
+    # 读取最后一帧
+    cap.set(cv2.CAP_PROP_POS_FRAMES, total_frames - 1)
+    ret, last_frame = cap.read()
+    if not ret:
+        cap.release()
+        raise RuntimeError("Failed to read the last frame")
+    last_frame_path = os.path.join(temp_dir, f"img{total_frames}.jpg")
+    cv2.imwrite(last_frame_path, last_frame)
+
+    cap.release()
+
+    return first_frame_path, last_frame_path
+
 # 判断是否可以登录
 @app.route('/employee/login', methods=['POST'])
 def login():
     #获取用户名和密码
     response_data = make_response()
     form = request.get_json()
-    user_name = form.get("userName")
     user_name = form.get("userName")
     user_password = form.get("password")
     # user_password = md5_encrypt(user_password)
@@ -66,7 +106,8 @@ def login():
     user_data = mysql_manager.query_fields(parser.parse_known_args()[0].employee_db,
                                               parser.parse_known_args()[0].employee_info,
                                               ["id", "password", "name", "userName", "phone", "role"],
-                                              {"username" : f"= '{user_name}'"})
+                                              {"userName" : f"= '{user_name}'"})
+
     if user_data == []:
         logger.info(f"{cur_function_name()}  用户不存在，登录失败")
         return jsonify(ResultBody(401, msg="用户不存在").to_dict()), 401
@@ -144,12 +185,12 @@ def employee_register():
     password = form.get("password")
     phone = form.get("phone")
     role = "user"
-    valid = check_is_valid(username, name, password, phone)
-    if valid[0]:
-        password = md5_encrypt(password)
-    else:
-        msg = "参数不全"
-        response_data = ResultBody(0, msg=msg)
+    # valid = check_is_valid(username, name, password, phone)
+    # if valid[0]:
+    #     password = md5_encrypt(password)
+    # else:
+    #     msg = "参数不全"
+    #     response_data = ResultBody(0, msg=msg)
     body = EmployeeBody(username, name, password, phone, role).GetAsDict()
     # db_name = parser.parse_args().employee_db
     # table_name = parser.parse_args().employee_info
@@ -191,7 +232,7 @@ def employee_edit_info():
     id = form.get("id")
     username = form.get("userName")
     name = form.get("name")
-    password = md5_encrypt(form.get("password"))
+    password = form.get("password")
     phone = form.get("phone")
     role = form.get("role")
     
@@ -475,58 +516,65 @@ def patient_add():
     return jsonify(response_data.to_dict())
 
 #测试返回类型，返回一个可以在前端下载图片的地址
-@app.route('/algorithm', methods=['GET', 'POST'])
+@app.route('/algorithm/upload', methods=['GET', 'POST'])
 def upload_file():
     #判断传入数据是否合法：
-    if 'file' not in request.files or 'algo' not in request.form:
+    if 'file' not in request.files or 'algorithm' not in request.form:
         return jsonify(ResultBody(400, msg="缺少文件或算法参数").to_dict()), 400
 
     file = request.files['file']
-    algo = request.form['algo']
+    algo = request.form['algorithm']
+    media_type = request.form['media_type']
+    id = request.form['id']
 
     # 保存原始文件
     original_filename = secure_filename(file.filename)
     original_filepath = os.path.join(app.config['UPLOAD_FOLDER'], original_filename)
     file.save(original_filepath)
 
+    print(media_type)
+
     # 处理文件
-    if algo == "micro_exp":
+    if algo == "微表情图像处理":
+        if media_type != 'video':
+            return jsonify(ResultBody(400, msg="无效的图片格式").to_dict()), 400
+
         # 生成保存结果的文件名
-        save_filename = f"{uuid.uuid4()}_processed.{original_filename.rsplit('.', 1)[1]}"
-        save_filepath = os.path.join(app.config['UPLOAD_FOLDER'], save_filename)
+        # save_filename = f"{uuid.uuid4()}_processed.{original_filename.rsplit('.', 1)[1]}"
+        # save_filepath = os.path.join(app.config['UPLOAD_FOLDER'], save_filename)
+        #
+        # # 构造命令行调用
+        # exe_path = "/home/ff/CZW/xnyy/microexp/detection/dist/predict/predict"
+        #
+        # # 假设 final_predict.exe 支持两个参数：img1 和 img2
+        # cmd = [
+        #     exe_path,
+        #     "--video", original_filepath,
+        #     "--weights", "/home/ff/CZW/xnyy/microexp/detection/dist/predict/s1.hdf5"
+        # ]
+        #
+        # # 执行外部程序
+        # result = subprocess.run(
+        #     cmd,
+        #     capture_output=True,  # 捕获 stdout 和 stderr
+        #     encoding='utf-8',  # 设置编码格式
+        #     errors='replace'  # 防止乱码
+        # )
+        #
+        # # 解析输出
+        # # 获取标准输出的所有行
+        # stdout_lines = result.stdout.strip().split('\n')
+        #
+        # # 只取最后两行
+        # last_two_lines = stdout_lines[-2:] if len(stdout_lines) >= 2 else stdout_lines
 
-        # 构造命令行调用
-        exe_path = "/home/ff/CZW/xnyy/microexp/detection/predict"
+        onset_path, apex_path = extract_first_and_last_frame(original_filepath)
 
-        # 假设 final_predict.exe 支持两个参数：img1 和 img2
-        cmd = [
-            exe_path,
-            "--video", original_filepath,
-            "--weights", "/home/ff/CZW/xnyy/microexp/detection/s1.hdf5"
-        ]
-
-        # 执行外部程序
-        result = subprocess.run(
-            cmd,
-            capture_output=True,  # 捕获 stdout 和 stderr
-            encoding='utf-8',  # 设置编码格式
-            errors='replace'  # 防止乱码
-        )
-
-        # 解析输出
-        # 获取标准输出的所有行
-        stdout_lines = result.stdout.strip().split('\n')
-
-        # 只取最后两行
-        last_two_lines = stdout_lines[-2:] if len(stdout_lines) >= 2 else stdout_lines
-
-        onset_path, apex_path = None, None
-
-        if len(last_two_lines) >= 2:
-            onset_line, apex_line = last_two_lines
-
-            onset_path = extract_image_path(onset_line)  # tmp_frames\xx\img23.jpg
-            apex_path = extract_image_path(apex_line)  # tmp_frames\xx\img31.jpg
+        # if len(last_two_lines) >= 2:
+        #     onset_line, apex_line = last_two_lines
+        #
+        #     onset_path = extract_image_path(onset_line)  # tmp_frames\xx\img23.jpg
+        #     apex_path = extract_image_path(apex_line)  # tmp_frames\xx\img31.jpg
 
         print("Onset Path: ", onset_path)
         print("Apex Path: ", apex_path)
@@ -546,6 +594,39 @@ def upload_file():
             errors='replace'  # 防止乱码
         )
 
+        stdout_str = result.stdout.strip()
+
+        # 定义英文到中文的表情映射
+        emotion_map = {
+            'happy': '开心',
+            'sad': '伤心',
+            'disgust': '厌恶',
+            'surprise': '惊讶',
+            'fear': '恐惧',
+            'anger': '愤怒',
+            'others': '其他'
+        }
+
+        # 解析情绪识别结果
+        emotion_results = {}
+        for line in stdout_str.split('\n'):
+            if ':' in line and not line.startswith('output image path:'):
+                key, value = line.split(':', 1)
+                key = key.strip().lower()
+                value = value.strip().strip('%')  # 去掉百分号
+                if key in emotion_map:
+                    try:
+                        # 转换为 float
+                        emotion_results[emotion_map[key]] = float(value) / 100.0
+                    except ValueError:
+                        # 异常处理：非数字内容转失败时默认设为 0.0 或其他占位值
+                        emotion_results[emotion_map[key]] = 0.0
+
+        # emotion = json.dumps(emotion_results, ensure_ascii=False)
+        analysisiResult = {"algorithm" : algo,
+                           "detail" : "微表情图像处理结果展示",
+                           "emotion" : emotion_results}
+
         # 提取 output image path
         for line in result.stdout.strip().split('\n'):
             if line.startswith('output image path:'):
@@ -556,23 +637,26 @@ def upload_file():
 
         if output_image_path:
             # 提取文件名
-            output_filename = os.path.basename(output_image_path)
+            output_filename = os.path.basename(apex_path)
 
             # 将文件复制到 uploads 目录
-            shutil.copy(output_image_path, os.path.join(app.config['UPLOAD_FOLDER'], output_filename))
+            shutil.copy(apex_path, os.path.join(app.config['UPLOAD_FOLDER'], output_filename))
 
             # 构造正确的 download_url
             download_url = url_for('download_file', filename=output_filename, _external=True)
 
-            return jsonify(ResultBody(200, data={'download_url': download_url}).to_dict())
+            return jsonify(ResultBody(1, data={'analysisResultUrl': download_url,
+                                                 "analysisResult" : analysisiResult}).to_dict())
         else:
             return jsonify(ResultBody(500, msg="无法解析输出图像路径").to_dict()), 500
 
-
-    elif algo in ("mr1", "mr2"):
+    elif algo in ("MR中脑核团图像处理像处理"):
         # 确保上传的是图片
         if not allowed_file(file.filename):
             return jsonify(ResultBody(400, msg="无效的图片格式").to_dict()), 400
+
+        #防止爆内存的重要代码，切勿删除
+        file.seek(0)
 
         # 创建临时目录
         unique_id = f"{random.randint(0, 9999):04d}"
@@ -580,13 +664,116 @@ def upload_file():
         output_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'output', unique_id)
 
         os.makedirs(input_dir, exist_ok=True)
+        # 检查目录是否存在且可写
+        if not os.access(input_dir, os.W_OK):
+            return jsonify(ResultBody(500, msg=f"无法写入input目录 {input_dir}").to_dict()), 500
         os.makedirs(output_dir, exist_ok=True)
+        # 检查目录是否存在且可写
+        if not os.access(input_dir, os.W_OK):
+            return jsonify(ResultBody(500, msg=f"无法写入output目录 {input_dir}").to_dict()), 500
 
         # 保存原始图像到 input_dir
-        original_filename = secure_filename(file.filename)
-        file_extension = original_filename.rsplit('.', 1)[1]
-        input_image_path = os.path.join(input_dir, f"brain_{unique_id}.nii.{file_extension}")
-        file.save(input_image_path)
+        original_filename = secure_filename(file.filename)  # 可选：安全化文件名
+        input_image_path = os.path.join(input_dir, original_filename)
+        file.save(os.path.join(input_image_path))
+
+        # 构造算法命令行（假设是 Python 脚本）
+        script_path = "/home/ff/CZW/xnyy/mr/nnUNet/predicet_brainht.py"  # 替换为你的实际脚本路径
+        cmd = [
+            sys.executable,  # 使用当前 Python 解释器
+            script_path,
+            "--input", input_dir,
+            "--output", output_dir
+        ]
+
+        # 执行算法
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            encoding='utf-8',
+            errors='replace'
+        )
+
+        print(result)
+
+        # 获取输出图片路径
+        # 解析输出中的图片路径
+        stdout_str = result.stdout.strip()
+        paths = re.findall(r"'(.*?)'", stdout_str)
+
+        heatmap_path = paths[0].strip()
+        axial_slice_path = paths[1].strip()
+
+        print(heatmap_path, axial_slice_path)
+
+        # 构造 download_url（热力图存入数据库）
+        heatmap_relative_path = os.path.relpath(heatmap_path, os.getcwd())
+        download_url2 = url_for('download_file',
+                               filename=os.path.relpath(heatmap_relative_path, app.config['UPLOAD_FOLDER']),
+                               _external=True)
+
+        print(download_url2)
+
+        db_name = parser.parse_args().patient_db
+        table_name = parser.parse_args().patient_diagnosis
+        insert_result = mysql_manager.insert_data(db_name, table_name, {"image_path":download_url2,
+                                                                            "id" : id,})
+        if not insert_result:
+            return jsonify(ResultBody(500, msg="写入数据库失败").to_dict()), 500
+
+        # 第二张图返回给前端
+        # axial_slice_relative_path = os.path.relpath(axial_slice_path, os.getcwd())
+        # download_url = url_for('download_file',
+        #                        filename=os.path.relpath(axial_slice_relative_path, app.config['UPLOAD_FOLDER']),
+        #                        _external=True)
+
+        # 获取上传目录的绝对路径
+        upload_folder_abs = os.path.abspath(app.config['UPLOAD_FOLDER'])
+
+        print(upload_folder_abs)
+
+        # 计算安全的相对路径
+        safe_relative_path = os.path.relpath(axial_slice_path, upload_folder_abs)
+        print(safe_relative_path)
+
+        # 生成合法 URL
+        download_url = url_for('download_file', filename=safe_relative_path, _external=True)
+
+        print(download_url)
+
+        analysisiResult = {"algorithm": algo,
+                           "detail": "MR中脑核团图像处理结果展示"}
+
+        return jsonify(ResultBody(1, data={'analysisiResultUrl': download_url,
+                                                "analysisiResult": analysisiResult
+                                           }).to_dict())
+
+    elif algo in ("MR脑组织图像处理"):
+        # 确保上传的是图片
+        if not allowed_file(file.filename):
+            return jsonify(ResultBody(400, msg="无效的图片格式").to_dict()), 400
+
+        #防止爆内存的重要代码，切勿删除
+        file.seek(0)
+
+        # 创建临时目录
+        unique_id = f"{random.randint(0, 9999):04d}"
+        input_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'input', unique_id)
+        output_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'output', unique_id)
+
+        os.makedirs(input_dir, exist_ok=True)
+        # 检查目录是否存在且可写
+        if not os.access(input_dir, os.W_OK):
+            return jsonify(ResultBody(500, msg=f"无法写入input目录 {input_dir}").to_dict()), 500
+        os.makedirs(output_dir, exist_ok=True)
+        # 检查目录是否存在且可写
+        if not os.access(input_dir, os.W_OK):
+            return jsonify(ResultBody(500, msg=f"无法写入output目录 {input_dir}").to_dict()), 500
+
+        # 保存原始图像到 input_dir
+        original_filename = secure_filename(file.filename)  # 可选：安全化文件名
+        input_image_path = os.path.join(input_dir, original_filename)
+        file.save(os.path.join(input_image_path))
 
         # 构造算法命令行（假设是 Python 脚本）
         script_path = "/home/ff/CZW/xnyy/mr/nnUNet/predicet_braints.py"  # 替换为你的实际脚本路径
@@ -607,36 +794,57 @@ def upload_file():
 
         print(result)
 
-        # result = predicet_braints.predict_segmentation(
-        #     input_image_dir=input_dir,  # 输入图像目录
-        # )
+        # 获取输出图片路径
+        # 解析输出中的图片路径
+        stdout_str = result.stdout.strip()
+        paths = re.findall(r"'(.*?)'", stdout_str)
 
-        if result.returncode != 0:
-            return jsonify(ResultBody(500, msg="算法执行失败", data={"error": result.stderr}).to_dict()), 500
+        heatmap_path = paths[0].strip()
+        axial_slice_path = paths[1].strip()
 
-        # 获取输出图片路径（假设输出两张图）
-        output_files = sorted(os.listdir(output_dir))
-        if len(output_files) < 2:
-            return jsonify(ResultBody(500, msg="算法未生成足够的输出图像").to_dict()), 500
+        print(heatmap_path, axial_slice_path)
 
-        output1_path = os.path.join(output_dir, output_files[0])
-        output2_path = os.path.join(output_dir, output_files[1])
+        # 构造 download_url（热力图存入数据库）
+        heatmap_relative_path = os.path.relpath(heatmap_path, os.getcwd())
+        download_url2 = url_for('download_file',
+                               filename=os.path.relpath(heatmap_relative_path, app.config['UPLOAD_FOLDER']),
+                               _external=True)
 
-        # 构造 download_url（第一张图）
-        output1_filename = os.path.basename(output1_path)
-        download_url = url_for('download_file', filename=os.path.join(unique_id, output1_filename), _external=True)
+        print(download_url2)
 
-        # 第二张图存入数据库
         db_name = parser.parse_args().patient_db
         table_name = parser.parse_args().patient_diagnosis
-
-        diagnosis_data = DiagnosisBody(image_path=output2_path, patient_id=id, diagnosis_type=algo).GetAsDict()
-        insert_result = mysql_manager.insert_data(db_name, table_name, diagnosis_data)
-
+        insert_result = mysql_manager.insert_data(db_name, table_name, {"image_path":download_url2,
+                                                                            "id" : id,})
         if not insert_result:
             return jsonify(ResultBody(500, msg="写入数据库失败").to_dict()), 500
 
-        return jsonify(ResultBody(200, data={'download_url': download_url}).to_dict())
+        # 第二张图返回给前端
+        # axial_slice_relative_path = os.path.relpath(axial_slice_path, os.getcwd())
+        # download_url = url_for('download_file',
+        #                        filename=os.path.relpath(axial_slice_relative_path, app.config['UPLOAD_FOLDER']),
+        #                        _external=True)
+
+        # 获取上传目录的绝对路径
+        upload_folder_abs = os.path.abspath(app.config['UPLOAD_FOLDER'])
+
+        print(upload_folder_abs)
+
+        # 计算安全的相对路径
+        safe_relative_path = os.path.relpath(axial_slice_path, upload_folder_abs)
+        print(safe_relative_path)
+
+        # 生成合法 URL
+        download_url = url_for('download_file', filename=safe_relative_path, _external=True)
+
+        print(download_url)
+
+        analysisiResult = {"algorithm": algo,
+                           "detail": "MR脑组织图像处理结果展示"}
+
+        return jsonify(ResultBody(1, data={'analysisiResultUrl': download_url,
+                                                "analysisiResult": analysisiResult
+                                           }).to_dict())
     else:
         return jsonify(ResultBody(400, msg="未知算法").to_dict()), 400
 
@@ -647,4 +855,4 @@ def download_file(filename):
 
 
 if __name__ == '__main__':
-    app.run(host = "0.0.0.0", port="5000", threaded=False)
+    app.run(host = "0.0.0.0", port="5000", threaded=True)
