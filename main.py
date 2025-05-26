@@ -744,8 +744,8 @@ def upload_file():
         analysisiResult = {"algorithm": algo,
                            "detail": "MR中脑核团图像处理结果展示"}
 
-        return jsonify(ResultBody(1, data={'analysisiResultUrl': download_url,
-                                                "analysisiResult": analysisiResult
+        return jsonify(ResultBody(1, data={'analysisResultUrl': download_url,
+                                                "analysisResult": analysisiResult
                                            }).to_dict())
 
     elif algo in ("MR脑组织图像处理"):
@@ -842,8 +842,8 @@ def upload_file():
         analysisiResult = {"algorithm": algo,
                            "detail": "MR脑组织图像处理结果展示"}
 
-        return jsonify(ResultBody(1, data={'analysisiResultUrl': download_url,
-                                                "analysisiResult": analysisiResult
+        return jsonify(ResultBody(1, data={'analysisResultUrl': download_url,
+                                                "analysisResult": analysisiResult
                                            }).to_dict())
     else:
         return jsonify(ResultBody(400, msg="未知算法").to_dict()), 400
